@@ -1,15 +1,24 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
 
-export default function SplashScreen({ navigation }: any) {
-  // Animações
+export default function SplashScreen() {
+  // ==============================
+  // ANIMAÇÕES
+  // ==============================
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
+
   const translateY = useRef(new Animated.Value(30)).current;
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Entrada da logo
+    // ==============================
+    // ENTRADA DA LOGO
+    // ==============================
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -32,7 +41,10 @@ export default function SplashScreen({ navigation }: any) {
       }),
     ]).start();
 
-    // Pequeno efeito de pulsação na logo
+    // ==============================
+    // PULSAÇÃO DA LOGO
+    // ==============================
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -51,43 +63,71 @@ export default function SplashScreen({ navigation }: any) {
       ]),
     ).start();
 
-    // Vai para Login depois de 2 segundos
-    const timer = setTimeout(() => {
-      navigation.replace("Login");
-    }, 2000);
+    // ==============================
+    // LIMPEZA DAS ANIMAÇÕES
+    // ==============================
 
-    return () => clearTimeout(timer);
-  }, [navigation]);
+    return () => {
+      fadeAnim.stopAnimation();
+      scaleAnim.stopAnimation();
+      translateY.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
+  }, [fadeAnim, scaleAnim, translateY, pulseAnim]);
+
+  // ==============================
+  // INTERFACE
+  // ==============================
 
   return (
     <View style={styles.container}>
-      {/* Círculos decorativos */}
+      {/* Círculo decorativo superior */}
       <View style={styles.circleTop} />
+
+      {/* Círculo decorativo inferior */}
       <View style={styles.circleBottom} />
 
-      {/* Logo em marca d'água */}
+      {/* ==========================
+          LOGO EM MARCA D'ÁGUA
+          ========================== */}
+
       <Image
-        source={require("../assents/imagens/zappyfood_logo.png")}
+        source={require("../../assets/imagens/zappyfood_logo.png")}
         style={styles.watermark}
       />
 
-      {/* Conteúdo principal */}
+      {/* ==========================
+          CONTEÚDO PRINCIPAL
+          ========================== */}
+
       <Animated.View
         style={[
           styles.content,
           {
             opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }, { translateY: translateY }],
+
+            transform: [
+              {
+                scale: scaleAnim,
+              },
+              {
+                translateY: translateY,
+              },
+            ],
           },
         ]}
       >
-        {/* Logo */}
+        {/* Logo principal */}
         <Animated.Image
-          source={require("../assents/imagens/zappyfood_logo.png")}
+          source={require("../../assets/imagens/zappyfood_logo.png")}
           style={[
             styles.logo,
             {
-              transform: [{ scale: pulseAnim }],
+              transform: [
+                {
+                  scale: pulseAnim,
+                },
+              ],
             },
           ]}
         />
@@ -101,7 +141,10 @@ export default function SplashScreen({ navigation }: any) {
         <Text style={styles.slogan}>Chegue. Peça. Aproveite.</Text>
       </Animated.View>
 
-      {/* Carregamento */}
+      {/* ==========================
+          CARREGAMENTO
+          ========================== */}
+
       <View style={styles.loadingContainer}>
         <View style={styles.loadingTrack}>
           <Animated.View
@@ -117,79 +160,127 @@ export default function SplashScreen({ navigation }: any) {
         <Text style={styles.loadingText}>Preparando seu pedido...</Text>
       </View>
 
-      {/* Rodapé */}
+      {/* ==========================
+          RODAPÉ
+          ========================== */}
+
       <Text style={styles.footer}>Sua experiência começa aqui</Text>
     </View>
   );
 }
 
+// ==============================
+// ESTILOS
+// ==============================
+
 const styles = StyleSheet.create({
+  // ============================
+  // CONTAINER
+  // ============================
+
   container: {
     flex: 1,
+
     backgroundColor: "#F8F8F8",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     overflow: "hidden",
   },
 
-  /* -------------------------
-     ELEMENTOS DECORATIVOS
-  -------------------------- */
+  // ============================
+  // ELEMENTOS DECORATIVOS
+  // ============================
 
   circleTop: {
     position: "absolute",
+
     width: 280,
+
     height: 280,
+
     borderRadius: 140,
+
     backgroundColor: "#27F5B4",
+
     opacity: 0.08,
+
     top: -130,
+
     right: -100,
   },
 
   circleBottom: {
     position: "absolute",
+
     width: 350,
+
     height: 350,
+
     borderRadius: 175,
+
     backgroundColor: "#F58427",
+
     opacity: 0.07,
+
     bottom: -180,
+
     left: -150,
   },
 
-  /* -------------------------
-     MARCA D'ÁGUA
-  -------------------------- */
+  // ============================
+  // MARCA D'ÁGUA
+  // ============================
 
   watermark: {
     position: "absolute",
+
     width: 500,
+
     height: 500,
+
     resizeMode: "contain",
+
     opacity: 0.035,
   },
 
-  /* -------------------------
-     CONTEÚDO
-  -------------------------- */
+  // ============================
+  // CONTEÚDO
+  // ============================
 
   content: {
     alignItems: "center",
+
     justifyContent: "center",
   },
 
+  // ============================
+  // LOGO
+  // ============================
+
   logo: {
     width: 190,
+
     height: 190,
+
     resizeMode: "contain",
   },
 
+  // ============================
+  // TÍTULO
+  // ============================
+
   title: {
     marginTop: 15,
+
     fontSize: 38,
+
     fontWeight: "800",
+
     letterSpacing: 1,
+
     color: "#F58427",
   },
 
@@ -197,55 +288,79 @@ const styles = StyleSheet.create({
     color: "#27CFA0",
   },
 
+  // ============================
+  // SLOGAN
+  // ============================
+
   slogan: {
     marginTop: 8,
+
     fontSize: 17,
+
     fontWeight: "600",
+
     letterSpacing: 0.5,
+
     color: "#444444",
   },
 
-  /* -------------------------
-     LOADING
-  -------------------------- */
+  // ============================
+  // LOADING
+  // ============================
 
   loadingContainer: {
     position: "absolute",
+
     bottom: 95,
+
     alignItems: "center",
   },
 
   loadingTrack: {
     width: 160,
+
     height: 5,
+
     borderRadius: 10,
+
     backgroundColor: "#E6E6E6",
+
     overflow: "hidden",
   },
 
   loadingBar: {
     width: "65%",
+
     height: "100%",
+
     borderRadius: 10,
+
     backgroundColor: "#27F5B4",
   },
 
   loadingText: {
     marginTop: 10,
+
     fontSize: 12,
+
     color: "#888888",
+
     letterSpacing: 0.3,
   },
 
-  /* -------------------------
-     RODAPÉ
-  -------------------------- */
+  // ============================
+  // RODAPÉ
+  // ============================
 
   footer: {
     position: "absolute",
+
     bottom: 35,
+
     fontSize: 11,
+
     color: "#AAAAAA",
+
     letterSpacing: 0.5,
   },
 });
