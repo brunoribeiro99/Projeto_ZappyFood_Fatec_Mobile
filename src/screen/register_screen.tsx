@@ -1,26 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import {
-    Alert,
-    Animated,
-    Easing,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Animated,
+  Easing,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
-export default function LoginScreen({ navigation }: any) {
+export default function CadastroScreen({ navigation }: any) {
   // =====================================================
   // ESTADOS
   // =====================================================
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
+  const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
@@ -77,6 +81,18 @@ export default function LoginScreen({ navigation }: any) {
   }, []);
 
   // =====================================================
+  // ALTERAÇÃO DO NOME
+  // =====================================================
+
+  const handleNameChange = (text: string) => {
+    setName(text);
+
+    if (nameError) {
+      setNameError("");
+    }
+  };
+
+  // =====================================================
   // ALTERAÇÃO DO E-MAIL
   // =====================================================
 
@@ -87,6 +103,76 @@ export default function LoginScreen({ navigation }: any) {
 
     if (emailError) {
       setEmailError("");
+    }
+  };
+
+  // =====================================================
+  // MÁSCARA DO CELULAR
+  // =====================================================
+
+  const handlePhoneChange = (text: string) => {
+    let value = text.replace(/\D/g, "");
+
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
+
+    if (value.length <= 10) {
+      value = value.replace(
+        /^(\d{0,2})(\d{0,4})(\d{0,4}).*/,
+        (match, ddd, first, second) => {
+          let result = "";
+
+          if (ddd) {
+            result += `(${ddd}`;
+          }
+
+          if (ddd.length === 2) {
+            result += ")";
+          }
+
+          if (first) {
+            result += ` ${first}`;
+          }
+
+          if (second) {
+            result += `-${second}`;
+          }
+
+          return result;
+        }
+      );
+    } else {
+      value = value.replace(
+        /^(\d{0,2})(\d{0,5})(\d{0,4}).*/,
+        (match, ddd, first, second) => {
+          let result = "";
+
+          if (ddd) {
+            result += `(${ddd}`;
+          }
+
+          if (ddd.length === 2) {
+            result += ")";
+          }
+
+          if (first) {
+            result += ` ${first}`;
+          }
+
+          if (second) {
+            result += `-${second}`;
+          }
+
+          return result;
+        }
+      );
+    }
+
+    setPhone(value);
+
+    if (phoneError) {
+      setPhoneError("");
     }
   };
 
@@ -103,13 +189,31 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   // =====================================================
+  // VALIDAÇÃO DO NOME
+  // =====================================================
+
+  const validateName = () => {
+    if (!name.trim()) {
+      setNameError("Informe seu nome.");
+      return false;
+    }
+
+    if (name.trim().length < 3) {
+      setNameError("Digite seu nome completo.");
+      return false;
+    }
+
+    setNameError("");
+    return true;
+  };
+
+  // =====================================================
   // VALIDAÇÃO DO E-MAIL
   // =====================================================
 
   const validateEmail = () => {
     if (!email.trim()) {
       setEmailError("Informe seu e-mail.");
-
       return false;
     }
 
@@ -117,12 +221,31 @@ export default function LoginScreen({ navigation }: any) {
 
     if (!emailRegex.test(email)) {
       setEmailError("Digite um e-mail válido.");
-
       return false;
     }
 
     setEmailError("");
+    return true;
+  };
 
+  // =====================================================
+  // VALIDAÇÃO DO CELULAR
+  // =====================================================
+
+  const validatePhone = () => {
+    if (!phone.trim()) {
+      setPhoneError("Informe seu celular.");
+      return false;
+    }
+
+    const numbersOnly = phone.replace(/\D/g, "");
+
+    if (numbersOnly.length !== 10 && numbersOnly.length !== 11) {
+      setPhoneError("Digite um celular válido.");
+      return false;
+    }
+
+    setPhoneError("");
     return true;
   };
 
@@ -133,55 +256,71 @@ export default function LoginScreen({ navigation }: any) {
   const validatePassword = () => {
     if (!password) {
       setPasswordError("Informe sua senha.");
-
       return false;
     }
 
     if (!hasSixCharacters) {
       setPasswordError("A senha deve ter pelo menos 6 caracteres.");
-
       return false;
     }
 
     if (!hasUppercase) {
-      setPasswordError("A senha deve conter pelo menos uma letra maiúscula.");
-
+      setPasswordError(
+        "A senha deve conter pelo menos uma letra maiúscula."
+      );
       return false;
     }
 
     if (!hasNumber) {
       setPasswordError("A senha deve conter pelo menos um número.");
-
       return false;
     }
 
     setPasswordError("");
-
     return true;
   };
 
   // =====================================================
-  // LOGIN
+  // CADASTRO
   // =====================================================
 
-  const handleLogin = () => {
+  const handleRegister = () => {
+    const nameIsValid = validateName();
     const emailIsValid = validateEmail();
+    const phoneIsValid = validatePhone();
     const passwordIsValid = validatePassword();
 
-    if (!emailIsValid || !passwordIsValid) {
-      Alert.alert("Atenção", "Por favor, verifique os dados informados.");
-
+    if (
+      !nameIsValid ||
+      !emailIsValid ||
+      !phoneIsValid ||
+      !passwordIsValid
+    ) {
+      Alert.alert(
+        "Atenção",
+        "Por favor, verifique os dados informados."
+      );
       return;
     }
 
-    Alert.alert("Login", "Login realizado com sucesso!");
+    Alert.alert(
+      "Cadastro realizado",
+      "Sua conta foi criada com sucesso!",
+      [
+        {
+          text: "Continuar",
+          onPress: () => navigation.navigate("Login"),
+        },
+      ]
+    );
 
     // =================================================
     // FUTURAMENTE:
-    // Aqui você poderá chamar a API de login.
+    // Aqui você poderá enviar os dados para sua API.
     //
     // Exemplo:
-    // navigation.navigate("Home");
+    //
+    // navigation.navigate("Login");
     // =================================================
   };
 
@@ -191,22 +330,22 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+
       {/* =================================================
-                DETALHE LARANJA SUPERIOR
-                ================================================= */}
+          DETALHE LARANJA SUPERIOR
+          ================================================= */}
 
       <View style={styles.topAccent} />
 
       {/* =================================================
-                CONTEÚDO
-                ================================================= */}
+          CONTEÚDO
+          ================================================= */}
 
       <Animated.View
         style={[
           styles.content,
           {
             opacity: fadeAnim,
-
             transform: [
               {
                 translateY: translateY,
@@ -215,9 +354,10 @@ export default function LoginScreen({ navigation }: any) {
           },
         ]}
       >
+
         {/* =================================================
-                    LOGO
-                    ================================================= */}
+            LOGO
+            ================================================= */}
 
         <Animated.View
           style={{
@@ -235,27 +375,63 @@ export default function LoginScreen({ navigation }: any) {
         </Animated.View>
 
         {/* =================================================
-                    TÍTULO
-                    ================================================= */}
+            TÍTULO
+            ================================================= */}
 
-        <Text style={styles.title}>Bem-vindo de volta!</Text>
+        <Text style={styles.title}>Crie sua conta</Text>
 
-        <Text style={styles.subtitle}>Entre na sua conta para continuar.</Text>
+        <Text style={styles.subtitle}>
+          Cadastre-se para começar a usar o Zappy Food.
+        </Text>
 
         {/* =================================================
-                    FORMULÁRIO
-                    ================================================= */}
+            FORMULÁRIO
+            ================================================= */}
 
         <View style={styles.form}>
+
           {/* =================================================
-                        E-MAIL
-                        ================================================= */}
+              NOME
+              ================================================= */}
 
           <View style={styles.inputContainer}>
+
+            <Text style={styles.label}>NOME</Text>
+
+            <TextInput
+              style={[
+                styles.input,
+                nameError && styles.inputError,
+              ]}
+              placeholder="Digite seu nome"
+              placeholderTextColor="#666666"
+              autoCapitalize="words"
+              autoCorrect={false}
+              value={name}
+              onChangeText={handleNameChange}
+            />
+
+            {nameError !== "" && (
+              <Text style={styles.errorText}>
+                {nameError}
+              </Text>
+            )}
+
+          </View>
+
+          {/* =================================================
+              E-MAIL
+              ================================================= */}
+
+          <View style={styles.inputContainer}>
+
             <Text style={styles.label}>E-MAIL</Text>
 
             <TextInput
-              style={[styles.input, emailError && styles.inputError]}
+              style={[
+                styles.input,
+                emailError && styles.inputError,
+              ]}
               placeholder="Digite seu e-mail"
               placeholderTextColor="#666666"
               keyboardType="email-address"
@@ -266,26 +442,61 @@ export default function LoginScreen({ navigation }: any) {
             />
 
             {emailError !== "" && (
-              <Text style={styles.errorText}>{emailError}</Text>
+              <Text style={styles.errorText}>
+                {emailError}
+              </Text>
             )}
+
           </View>
 
           {/* =================================================
-                        SENHA
-                        ================================================= */}
+              CELULAR
+              ================================================= */}
 
           <View style={styles.inputContainer}>
+
+            <Text style={styles.label}>CELULAR</Text>
+
+            <TextInput
+              style={[
+                styles.input,
+                phoneError && styles.inputError,
+              ]}
+              placeholder="(00) 00000-0000"
+              placeholderTextColor="#666666"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={handlePhoneChange}
+              maxLength={15}
+            />
+
+            {phoneError !== "" && (
+              <Text style={styles.errorText}>
+                {phoneError}
+              </Text>
+            )}
+
+          </View>
+
+          {/* =================================================
+              SENHA
+              ================================================= */}
+
+          <View style={styles.inputContainer}>
+
             <Text style={styles.label}>SENHA</Text>
 
             <View
               style={[
                 styles.passwordContainer,
-                passwordError && styles.passwordContainerError,
+                passwordError &&
+                  styles.passwordContainerError,
               ]}
             >
+
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Digite sua senha"
+                placeholder="Crie uma senha"
                 placeholderTextColor="#666666"
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
@@ -295,80 +506,89 @@ export default function LoginScreen({ navigation }: any) {
 
               <Pressable
                 style={styles.showPasswordButton}
-                onPress={() => setShowPassword(!showPassword)}
+                onPress={() =>
+                  setShowPassword(!showPassword)
+                }
               >
                 <Text style={styles.showPasswordText}>
                   {showPassword ? "OCULTAR" : "VER"}
                 </Text>
               </Pressable>
+
             </View>
 
             {passwordError !== "" && (
-              <Text style={styles.errorText}>{passwordError}</Text>
+              <Text style={styles.errorText}>
+                {passwordError}
+              </Text>
             )}
+
           </View>
 
           {/* =================================================
-                        ESQUECI A SENHA
-                        ================================================= */}
-
-          <Pressable
-            style={styles.forgotButton}
-            onPress={() => {
-              Alert.alert(
-                "Esqueci minha senha",
-                "Informe seu e-mail para recuperar sua senha.",
-              );
-            }}
-          >
-            <Text style={styles.forgotText}>Esqueci minha senha</Text>
-          </Pressable>
-
-          {/* =================================================
-                        BOTÃO ENTRAR
-                        ================================================= */}
+              BOTÃO CADASTRAR
+              ================================================= */}
 
           <Pressable
             style={({ pressed }) => [
-              styles.loginButton,
-              pressed && styles.loginButtonPressed,
+              styles.registerButton,
+              pressed && styles.registerButtonPressed,
             ]}
-            onPress={handleLogin}
+            onPress={handleRegister}
           >
-            <Text style={styles.loginButtonText}>ENTRAR</Text>
+            <Text style={styles.registerButtonText}>
+              CRIAR CONTA
+            </Text>
           </Pressable>
 
           {/* =================================================
-                        SEPARADOR
-                        ================================================= */}
+              SEPARADOR
+              ================================================= */}
 
           <View style={styles.separatorContainer}>
-            <View style={styles.separatorLine} />
-
-            <Text style={styles.separatorText}>ou</Text>
 
             <View style={styles.separatorLine} />
+
+            <Text style={styles.separatorText}>
+              ou
+            </Text>
+
+            <View style={styles.separatorLine} />
+
           </View>
 
           {/* =================================================
-                        CADASTRO
-                        ================================================= */}
+              VOLTAR PARA LOGIN
+              ================================================= */}
 
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Não tem uma conta?</Text>
+          <View style={styles.loginContainer}>
 
-            <Pressable onPress={() => navigation.navigate("Cadastro")}>
-              <Text style={styles.registerLink}>Cadastre-se</Text>
+            <Text style={styles.loginText}>
+              Já possui uma conta?
+            </Text>
+
+            <Pressable
+              onPress={() => navigation.navigate("Login")}
+            >
+              <Text style={styles.loginLink}>
+                Entrar
+              </Text>
             </Pressable>
+
           </View>
+
         </View>
+
       </Animated.View>
 
       {/* =================================================
-                RODAPÉ
-                ================================================= */}
+          RODAPÉ
+          ================================================= */}
 
-      <Text style={styles.footer}>ZAPPY FOOD</Text>
+      <Text style={styles.footer}>
+        ZAPPY FOOD
+      </Text>
+
     </View>
   );
 }
@@ -378,6 +598,7 @@ export default function LoginScreen({ navigation }: any) {
 // =====================================================
 
 const styles = StyleSheet.create({
+
   // ===================================================
   // FUNDO
   // ===================================================
@@ -410,7 +631,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 380,
     alignItems: "center",
-    marginTop: 55,
+    marginTop: 35,
   },
 
   // ===================================================
@@ -418,8 +639,8 @@ const styles = StyleSheet.create({
   // ===================================================
 
   logo: {
-    width: 105,
-    height: 105,
+    width: 82,
+    height: 82,
     resizeMode: "contain",
   },
 
@@ -428,7 +649,7 @@ const styles = StyleSheet.create({
   // ===================================================
 
   title: {
-    marginTop: 12,
+    marginTop: 8,
     fontSize: 25,
     fontWeight: "900",
     color: "#FFFFFF",
@@ -440,10 +661,11 @@ const styles = StyleSheet.create({
   // ===================================================
 
   subtitle: {
-    marginTop: 7,
-    fontSize: 13,
+    marginTop: 6,
+    fontSize: 12,
     color: "#858585",
     fontWeight: "500",
+    textAlign: "center",
   },
 
   // ===================================================
@@ -452,7 +674,7 @@ const styles = StyleSheet.create({
 
   form: {
     width: "100%",
-    marginTop: 32,
+    marginTop: 22,
   },
 
   // ===================================================
@@ -460,11 +682,11 @@ const styles = StyleSheet.create({
   // ===================================================
 
   inputContainer: {
-    marginBottom: 18,
+    marginBottom: 13,
   },
 
   label: {
-    marginBottom: 8,
+    marginBottom: 7,
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 1.5,
@@ -473,7 +695,7 @@ const styles = StyleSheet.create({
 
   input: {
     width: "100%",
-    height: 54,
+    height: 50,
     borderRadius: 11,
     borderWidth: 1,
     borderColor: "#333333",
@@ -492,7 +714,7 @@ const styles = StyleSheet.create({
   },
 
   errorText: {
-    marginTop: 6,
+    marginTop: 5,
     fontSize: 10,
     color: "#E05A47",
     fontWeight: "600",
@@ -504,7 +726,7 @@ const styles = StyleSheet.create({
 
   passwordContainer: {
     width: "100%",
-    height: 54,
+    height: 50,
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 11,
@@ -527,7 +749,7 @@ const styles = StyleSheet.create({
 
   showPasswordButton: {
     paddingHorizontal: 15,
-    paddingVertical: 15,
+    paddingVertical: 14,
   },
 
   showPasswordText: {
@@ -538,46 +760,28 @@ const styles = StyleSheet.create({
   },
 
   // ===================================================
-  // ESQUECI SENHA
+  // BOTÃO CADASTRAR
   // ===================================================
 
-  forgotButton: {
-    alignSelf: "flex-end",
-    marginTop: -5,
-    marginBottom: 22,
-  },
-
-  forgotText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#F58427",
-  },
-
-  // ===================================================
-  // BOTÃO ENTRAR
-  // ===================================================
-
-  loginButton: {
+  registerButton: {
     width: "100%",
-    height: 54,
+    height: 52,
     borderRadius: 11,
     backgroundColor: "#F58427",
     alignItems: "center",
     justifyContent: "center",
 
     shadowColor: "#F58427",
-
     shadowOffset: {
       width: 0,
       height: 5,
     },
-
     shadowOpacity: 0.22,
     shadowRadius: 8,
     elevation: 5,
   },
 
-  loginButtonPressed: {
+  registerButtonPressed: {
     opacity: 0.75,
     transform: [
       {
@@ -586,9 +790,9 @@ const styles = StyleSheet.create({
     ],
   },
 
-  loginButtonText: {
+  registerButtonText: {
     color: "#111111",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "900",
     letterSpacing: 1,
   },
@@ -601,8 +805,8 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 25,
-    marginBottom: 22,
+    marginTop: 20,
+    marginBottom: 18,
   },
 
   separatorLine: {
@@ -618,21 +822,21 @@ const styles = StyleSheet.create({
   },
 
   // ===================================================
-  // CADASTRO
+  // LOGIN
   // ===================================================
 
-  registerContainer: {
+  loginContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
   },
 
-  registerText: {
+  loginText: {
     fontSize: 12,
     color: "#777777",
   },
 
-  registerLink: {
+  loginLink: {
     marginLeft: 5,
     fontSize: 12,
     fontWeight: "800",

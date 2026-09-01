@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 //Importa todas a telas do app
 import LoginScreen from "./src/screen/login_screen";
+import RegisterScreen from "./src/screen/register_screen";
 import SplashScreen from "./src/screen/splash_screen";
 
 const Stack = createNativeStackNavigator();
@@ -16,6 +17,7 @@ export default function App() {
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
