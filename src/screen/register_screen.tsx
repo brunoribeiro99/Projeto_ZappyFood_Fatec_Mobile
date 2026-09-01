@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 
 import {
@@ -5,7 +6,10 @@ import {
   Animated,
   Easing,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +17,7 @@ import {
 } from "react-native";
 
 export default function CadastroScreen({ navigation }: any) {
+
   // =====================================================
   // ESTADOS
   // =====================================================
@@ -33,9 +38,10 @@ export default function CadastroScreen({ navigation }: any) {
   // REGRAS DA SENHA
   // =====================================================
 
-  const hasSixCharacters = password.length >= 6;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
+  const hasEightCharacters = password.length >= 8;
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSymbol = /[^A-Za-z\d]/.test(password);
 
   // =====================================================
   // ANIMAÇÕES
@@ -50,7 +56,9 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   useEffect(() => {
+
     Animated.parallel([
+
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 650,
@@ -71,6 +79,7 @@ export default function CadastroScreen({ navigation }: any) {
         tension: 55,
         useNativeDriver: true,
       }),
+
     ]).start();
 
     return () => {
@@ -78,6 +87,7 @@ export default function CadastroScreen({ navigation }: any) {
       translateY.stopAnimation();
       logoScale.stopAnimation();
     };
+
   }, []);
 
   // =====================================================
@@ -85,11 +95,13 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const handleNameChange = (text: string) => {
+
     setName(text);
 
     if (nameError) {
       setNameError("");
     }
+
   };
 
   // =====================================================
@@ -97,13 +109,17 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const handleEmailChange = (text: string) => {
-    const value = text.replace(/\s/g, "").toLowerCase();
+
+    const value = text
+      .replace(/\s/g, "")
+      .toLowerCase();
 
     setEmail(value);
 
     if (emailError) {
       setEmailError("");
     }
+
   };
 
   // =====================================================
@@ -111,62 +127,28 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const handlePhoneChange = (text: string) => {
+
     let value = text.replace(/\D/g, "");
 
     if (value.length > 11) {
       value = value.substring(0, 11);
     }
 
-    if (value.length <= 10) {
-      value = value.replace(
-        /^(\d{0,2})(\d{0,4})(\d{0,4}).*/,
-        (match, ddd, first, second) => {
-          let result = "";
+    if (value.length <= 2) {
 
-          if (ddd) {
-            result += `(${ddd}`;
-          }
+      value = value;
 
-          if (ddd.length === 2) {
-            result += ")";
-          }
+    } else if (value.length <= 7) {
 
-          if (first) {
-            result += ` ${first}`;
-          }
+      value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
 
-          if (second) {
-            result += `-${second}`;
-          }
-
-          return result;
-        }
-      );
     } else {
-      value = value.replace(
-        /^(\d{0,2})(\d{0,5})(\d{0,4}).*/,
-        (match, ddd, first, second) => {
-          let result = "";
 
-          if (ddd) {
-            result += `(${ddd}`;
-          }
+      value = `(${value.substring(0, 2)}) ${value.substring(
+        2,
+        7
+      )}-${value.substring(7)}`;
 
-          if (ddd.length === 2) {
-            result += ")";
-          }
-
-          if (first) {
-            result += ` ${first}`;
-          }
-
-          if (second) {
-            result += `-${second}`;
-          }
-
-          return result;
-        }
-      );
     }
 
     setPhone(value);
@@ -174,6 +156,7 @@ export default function CadastroScreen({ navigation }: any) {
     if (phoneError) {
       setPhoneError("");
     }
+
   };
 
   // =====================================================
@@ -181,11 +164,13 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const handlePasswordChange = (text: string) => {
+
     setPassword(text);
 
     if (passwordError) {
       setPasswordError("");
     }
+
   };
 
   // =====================================================
@@ -193,18 +178,24 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const validateName = () => {
+
     if (!name.trim()) {
+
       setNameError("Informe seu nome.");
       return false;
+
     }
 
     if (name.trim().length < 3) {
+
       setNameError("Digite seu nome completo.");
       return false;
+
     }
 
     setNameError("");
     return true;
+
   };
 
   // =====================================================
@@ -212,20 +203,27 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const validateEmail = () => {
+
     if (!email.trim()) {
+
       setEmailError("Informe seu e-mail.");
       return false;
+
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
+
       setEmailError("Digite um e-mail válido.");
       return false;
+
     }
 
     setEmailError("");
     return true;
+
   };
 
   // =====================================================
@@ -233,20 +231,29 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const validatePhone = () => {
+
     if (!phone.trim()) {
+
       setPhoneError("Informe seu celular.");
       return false;
+
     }
 
     const numbersOnly = phone.replace(/\D/g, "");
 
-    if (numbersOnly.length !== 10 && numbersOnly.length !== 11) {
+    if (
+      numbersOnly.length !== 10 &&
+      numbersOnly.length !== 11
+    ) {
+
       setPhoneError("Digite um celular válido.");
       return false;
+
     }
 
     setPhoneError("");
     return true;
+
   };
 
   // =====================================================
@@ -254,30 +261,57 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const validatePassword = () => {
+
     if (!password) {
+
       setPasswordError("Informe sua senha.");
       return false;
+
     }
 
-    if (!hasSixCharacters) {
-      setPasswordError("A senha deve ter pelo menos 6 caracteres.");
-      return false;
-    }
+    if (!hasEightCharacters) {
 
-    if (!hasUppercase) {
       setPasswordError(
-        "A senha deve conter pelo menos uma letra maiúscula."
+        "A senha deve ter pelo menos 8 caracteres."
       );
+
       return false;
+
+    }
+
+    if (!hasLetter) {
+
+      setPasswordError(
+        "A senha deve conter pelo menos uma letra."
+      );
+
+      return false;
+
     }
 
     if (!hasNumber) {
-      setPasswordError("A senha deve conter pelo menos um número.");
+
+      setPasswordError(
+        "A senha deve conter pelo menos um número."
+      );
+
       return false;
+
+    }
+
+    if (!hasSymbol) {
+
+      setPasswordError(
+        "A senha deve conter pelo menos um símbolo."
+      );
+
+      return false;
+
     }
 
     setPasswordError("");
     return true;
+
   };
 
   // =====================================================
@@ -285,6 +319,7 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const handleRegister = () => {
+
     const nameIsValid = validateName();
     const emailIsValid = validateEmail();
     const phoneIsValid = validatePhone();
@@ -296,11 +331,14 @@ export default function CadastroScreen({ navigation }: any) {
       !phoneIsValid ||
       !passwordIsValid
     ) {
+
       Alert.alert(
         "Atenção",
         "Por favor, verifique os dados informados."
       );
+
       return;
+
     }
 
     Alert.alert(
@@ -322,6 +360,7 @@ export default function CadastroScreen({ navigation }: any) {
     //
     // navigation.navigate("Login");
     // =================================================
+
   };
 
   // =====================================================
@@ -329,6 +368,7 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   return (
+
     <View style={styles.container}>
 
       {/* =================================================
@@ -338,248 +378,354 @@ export default function CadastroScreen({ navigation }: any) {
       <View style={styles.topAccent} />
 
       {/* =================================================
-          CONTEÚDO
+          CONTROLE DO TECLADO
           ================================================= */}
 
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [
-              {
-                translateY: translateY,
-              },
-            ],
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
       >
 
-        {/* =================================================
-            LOGO
-            ================================================= */}
-
-        <Animated.View
-          style={{
-            transform: [
-              {
-                scale: logoScale,
-              },
-            ],
-          }}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Image
-            source={require("../../assets/imagens/zappyfood_logo.png")}
-            style={styles.logo}
-          />
-        </Animated.View>
-
-        {/* =================================================
-            TÍTULO
-            ================================================= */}
-
-        <Text style={styles.title}>Crie sua conta</Text>
-
-        <Text style={styles.subtitle}>
-          Cadastre-se para começar a usar o Zappy Food.
-        </Text>
-
-        {/* =================================================
-            FORMULÁRIO
-            ================================================= */}
-
-        <View style={styles.form}>
 
           {/* =================================================
-              NOME
+              CONTEÚDO
               ================================================= */}
 
-          <View style={styles.inputContainer}>
+          <Animated.View
+            style={[
+              styles.content,
+              {
+                opacity: fadeAnim,
 
-            <Text style={styles.label}>NOME</Text>
+                transform: [
+                  {
+                    translateY: translateY,
+                  },
+                ],
+              },
+            ]}
+          >
 
-            <TextInput
-              style={[
-                styles.input,
-                nameError && styles.inputError,
-              ]}
-              placeholder="Digite seu nome"
-              placeholderTextColor="#666666"
-              autoCapitalize="words"
-              autoCorrect={false}
-              value={name}
-              onChangeText={handleNameChange}
-            />
+            {/* =================================================
+                LOGO
+                ================================================= */}
 
-            {nameError !== "" && (
-              <Text style={styles.errorText}>
-                {nameError}
-              </Text>
-            )}
-
-          </View>
-
-          {/* =================================================
-              E-MAIL
-              ================================================= */}
-
-          <View style={styles.inputContainer}>
-
-            <Text style={styles.label}>E-MAIL</Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                emailError && styles.inputError,
-              ]}
-              placeholder="Digite seu e-mail"
-              placeholderTextColor="#666666"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={handleEmailChange}
-            />
-
-            {emailError !== "" && (
-              <Text style={styles.errorText}>
-                {emailError}
-              </Text>
-            )}
-
-          </View>
-
-          {/* =================================================
-              CELULAR
-              ================================================= */}
-
-          <View style={styles.inputContainer}>
-
-            <Text style={styles.label}>CELULAR</Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                phoneError && styles.inputError,
-              ]}
-              placeholder="(00) 00000-0000"
-              placeholderTextColor="#666666"
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={handlePhoneChange}
-              maxLength={15}
-            />
-
-            {phoneError !== "" && (
-              <Text style={styles.errorText}>
-                {phoneError}
-              </Text>
-            )}
-
-          </View>
-
-          {/* =================================================
-              SENHA
-              ================================================= */}
-
-          <View style={styles.inputContainer}>
-
-            <Text style={styles.label}>SENHA</Text>
-
-            <View
-              style={[
-                styles.passwordContainer,
-                passwordError &&
-                  styles.passwordContainerError,
-              ]}
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    scale: logoScale,
+                  },
+                ],
+              }}
             >
 
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Crie uma senha"
-                placeholderTextColor="#666666"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                value={password}
-                onChangeText={handlePasswordChange}
+              <Image
+                source={require(
+                  "../../assets/imagens/zappyfood_logo.png"
+                )}
+                style={styles.logo}
               />
 
-              <Pressable
-                style={styles.showPasswordButton}
-                onPress={() =>
-                  setShowPassword(!showPassword)
-                }
-              >
-                <Text style={styles.showPasswordText}>
-                  {showPassword ? "OCULTAR" : "VER"}
+            </Animated.View>
+
+            {/* =================================================
+                TÍTULO
+                ================================================= */}
+
+            <Text style={styles.title}>
+              Crie sua conta
+            </Text>
+
+            <Text style={styles.subtitle}>
+              Cadastre-se para começar a usar o Zappy Food.
+            </Text>
+
+            {/* =================================================
+                FORMULÁRIO
+                ================================================= */}
+
+            <View style={styles.form}>
+
+              {/* =================================================
+                  NOME
+                  ================================================= */}
+
+              <View style={styles.inputContainer}>
+
+                <Text style={styles.label}>
+                  NOME
                 </Text>
+
+                <TextInput
+                  style={[
+                    styles.input,
+                    nameError && styles.inputError,
+                  ]}
+                  placeholder="Digite seu nome"
+                  placeholderTextColor="#666666"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={name}
+                  onChangeText={handleNameChange}
+                />
+
+                {nameError !== "" && (
+
+                  <Text style={styles.errorText}>
+                    {nameError}
+                  </Text>
+
+                )}
+
+              </View>
+
+              {/* =================================================
+                  E-MAIL
+                  ================================================= */}
+
+              <View style={styles.inputContainer}>
+
+                <Text style={styles.label}>
+                  E-MAIL
+                </Text>
+
+                <TextInput
+                  style={[
+                    styles.input,
+                    emailError && styles.inputError,
+                  ]}
+                  placeholder="Digite seu e-mail"
+                  placeholderTextColor="#666666"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  value={email}
+                  onChangeText={handleEmailChange}
+                />
+
+                {emailError !== "" && (
+
+                  <Text style={styles.errorText}>
+                    {emailError}
+                  </Text>
+
+                )}
+
+              </View>
+
+              {/* =================================================
+                  CELULAR
+                  ================================================= */}
+
+              <View style={styles.inputContainer}>
+
+                <Text style={styles.label}>
+                  CELULAR
+                </Text>
+
+                <TextInput
+                  style={[
+                    styles.input,
+                    phoneError && styles.inputError,
+                  ]}
+                  placeholder="(00) 00000-0000"
+                  placeholderTextColor="#666666"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={handlePhoneChange}
+                  maxLength={15}
+                />
+
+                {phoneError !== "" && (
+
+                  <Text style={styles.errorText}>
+                    {phoneError}
+                  </Text>
+
+                )}
+
+              </View>
+
+              {/* =================================================
+                  SENHA
+                  ================================================= */}
+
+              <View style={styles.inputContainer}>
+
+                <Text style={styles.label}>
+                  SENHA
+                </Text>
+
+                <View
+                  style={[
+                    styles.passwordContainer,
+                    passwordError &&
+                      styles.passwordContainerError,
+                  ]}
+                >
+
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Crie uma senha"
+                    placeholderTextColor="#666666"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={password}
+                    onChangeText={handlePasswordChange}
+                  />
+
+                  <Pressable
+                    style={styles.showPasswordButton}
+                    onPress={() =>
+                      setShowPassword(!showPassword)
+                    }
+                  >
+
+                    <Text style={styles.showPasswordText}>
+                      {showPassword ? "OCULTAR" : "VER"}
+                    </Text>
+
+                  </Pressable>
+
+                </View>
+
+                {/* =================================================
+                    REGRAS DA SENHA
+                    ================================================= */}
+
+                <View style={styles.passwordRules}>
+
+                  <Text
+                    style={[
+                      styles.rule,
+                      hasEightCharacters &&
+                        styles.ruleValid,
+                    ]}
+                  >
+                    {hasEightCharacters ? "✓" : "○"}{" "}
+                    Mínimo de 8 caracteres
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.rule,
+                      hasLetter && styles.ruleValid,
+                    ]}
+                  >
+                    {hasLetter ? "✓" : "○"}{" "}
+                    Pelo menos uma letra
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.rule,
+                      hasNumber && styles.ruleValid,
+                    ]}
+                  >
+                    {hasNumber ? "✓" : "○"}{" "}
+                    Pelo menos um número
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.rule,
+                      hasSymbol && styles.ruleValid,
+                    ]}
+                  >
+                    {hasSymbol ? "✓" : "○"}{" "}
+                    Pelo menos um símbolo
+                  </Text>
+
+                </View>
+
+                {passwordError !== "" && (
+
+                  <Text style={styles.errorText}>
+                    {passwordError}
+                  </Text>
+
+                )}
+
+              </View>
+
+              {/* =================================================
+                  BOTÃO CADASTRAR
+                  ================================================= */}
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.registerButton,
+                  pressed &&
+                    styles.registerButtonPressed,
+                ]}
+                onPress={handleRegister}
+              >
+
+                <Text style={styles.registerButtonText}>
+                  CRIAR CONTA
+                </Text>
+
               </Pressable>
+
+              {/* =================================================
+                  SEPARADOR
+                  ================================================= */}
+
+              <View style={styles.separatorContainer}>
+
+                <View style={styles.separatorLine} />
+
+                <Text style={styles.separatorText}>
+                  ou
+                </Text>
+
+                <View style={styles.separatorLine} />
+
+              </View>
+
+              {/* =================================================
+                  VOLTAR PARA LOGIN
+                  ================================================= */}
+
+              <View style={styles.loginContainer}>
+
+                <Text style={styles.loginText}>
+                  Já possui uma conta?
+                </Text>
+
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate("Login")
+                  }
+                >
+
+                  <Text style={styles.loginLink}>
+                    Entrar
+                  </Text>
+
+                </Pressable>
+
+              </View>
 
             </View>
 
-            {passwordError !== "" && (
-              <Text style={styles.errorText}>
-                {passwordError}
-              </Text>
-            )}
+          </Animated.View>
 
-          </View>
+        </ScrollView>
 
-          {/* =================================================
-              BOTÃO CADASTRAR
-              ================================================= */}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.registerButton,
-              pressed && styles.registerButtonPressed,
-            ]}
-            onPress={handleRegister}
-          >
-            <Text style={styles.registerButtonText}>
-              CRIAR CONTA
-            </Text>
-          </Pressable>
-
-          {/* =================================================
-              SEPARADOR
-              ================================================= */}
-
-          <View style={styles.separatorContainer}>
-
-            <View style={styles.separatorLine} />
-
-            <Text style={styles.separatorText}>
-              ou
-            </Text>
-
-            <View style={styles.separatorLine} />
-
-          </View>
-
-          {/* =================================================
-              VOLTAR PARA LOGIN
-              ================================================= */}
-
-          <View style={styles.loginContainer}>
-
-            <Text style={styles.loginText}>
-              Já possui uma conta?
-            </Text>
-
-            <Pressable
-              onPress={() => navigation.navigate("Login")}
-            >
-              <Text style={styles.loginLink}>
-                Entrar
-              </Text>
-            </Pressable>
-
-          </View>
-
-        </View>
-
-      </Animated.View>
+      </KeyboardAvoidingView>
 
       {/* =================================================
           RODAPÉ
@@ -611,6 +757,23 @@ const styles = StyleSheet.create({
   },
 
   // ===================================================
+  // CONTROLE DO TECLADO
+  // ===================================================
+
+  keyboardContainer: {
+    flex: 1,
+    width: "100%",
+  },
+
+  // ===================================================
+  // SCROLL
+  // ===================================================
+
+  scrollContent: {
+    flexGrow: 1,
+  },
+
+  // ===================================================
   // DETALHE SUPERIOR
   // ===================================================
 
@@ -621,6 +784,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: 4,
     backgroundColor: "#F58427",
+    zIndex: 2,
   },
 
   // ===================================================
@@ -632,6 +796,7 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     alignItems: "center",
     marginTop: 35,
+    paddingBottom: 90,
   },
 
   // ===================================================
@@ -760,6 +925,26 @@ const styles = StyleSheet.create({
   },
 
   // ===================================================
+  // REGRAS DA SENHA
+  // ===================================================
+
+  passwordRules: {
+    marginTop: 8,
+    marginLeft: 3,
+  },
+
+  rule: {
+    fontSize: 10,
+    color: "#555555",
+    marginBottom: 3,
+  },
+
+  ruleValid: {
+    color: "#F58427",
+    fontWeight: "700",
+  },
+
+  // ===================================================
   // BOTÃO CADASTRAR
   // ===================================================
 
@@ -855,4 +1040,5 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     color: "#444444",
   },
+
 });

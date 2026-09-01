@@ -5,7 +5,10 @@ import {
     Animated,
     Easing,
     Image,
+    KeyboardAvoidingView,
+    Platform,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -13,364 +16,539 @@ import {
 } from "react-native";
 
 export default function LoginScreen({ navigation }: any) {
-  // =====================================================
-  // ESTADOS
-  // =====================================================
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+    // =====================================================
+    // ESTADOS
+    // =====================================================
 
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
-  const [showPassword, setShowPassword] = useState(false);
+    const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
 
-  // =====================================================
-  // REGRAS DA SENHA
-  // =====================================================
+    const [showPassword, setShowPassword] = useState(false);
 
-  const hasSixCharacters = password.length >= 6;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
+    // =====================================================
+    // REGRAS DA SENHA
+    // =====================================================
 
-  // =====================================================
-  // ANIMAÇÕES
-  // =====================================================
+    const hasEightCharacters = password.length >= 8;
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSymbol = /[^A-Za-z\d]/.test(password);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(25)).current;
-  const logoScale = useRef(new Animated.Value(0.9)).current;
+    // =====================================================
+    // ANIMAÇÕES
+    // =====================================================
 
-  // =====================================================
-  // ANIMAÇÃO INICIAL
-  // =====================================================
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const translateY = useRef(new Animated.Value(25)).current;
+    const logoScale = useRef(new Animated.Value(0.9)).current;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 650,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+    // =====================================================
+    // ANIMAÇÃO INICIAL
+    // =====================================================
 
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 650,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+    useEffect(() => {
 
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 7,
-        tension: 55,
-        useNativeDriver: true,
-      }),
-    ]).start();
+        Animated.parallel([
 
-    return () => {
-      fadeAnim.stopAnimation();
-      translateY.stopAnimation();
-      logoScale.stopAnimation();
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 650,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+
+            Animated.timing(translateY, {
+                toValue: 0,
+                duration: 650,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+
+            Animated.spring(logoScale, {
+                toValue: 1,
+                friction: 7,
+                tension: 55,
+                useNativeDriver: true,
+            }),
+
+        ]).start();
+
+        return () => {
+            fadeAnim.stopAnimation();
+            translateY.stopAnimation();
+            logoScale.stopAnimation();
+        };
+
+    }, []);
+
+    // =====================================================
+    // ALTERAÇÃO DO E-MAIL
+    // =====================================================
+
+    const handleEmailChange = (text: string) => {
+
+        const value = text
+            .replace(/\s/g, "")
+            .toLowerCase();
+
+        setEmail(value);
+
+        if (emailError) {
+            setEmailError("");
+        }
     };
-  }, []);
 
-  // =====================================================
-  // ALTERAÇÃO DO E-MAIL
-  // =====================================================
+    // =====================================================
+    // ALTERAÇÃO DA SENHA
+    // =====================================================
 
-  const handleEmailChange = (text: string) => {
-    const value = text.replace(/\s/g, "").toLowerCase();
+    const handlePasswordChange = (text: string) => {
 
-    setEmail(value);
+        setPassword(text);
 
-    if (emailError) {
-      setEmailError("");
-    }
-  };
+        if (passwordError) {
+            setPasswordError("");
+        }
+    };
 
-  // =====================================================
-  // ALTERAÇÃO DA SENHA
-  // =====================================================
+    // =====================================================
+    // VALIDAÇÃO DO E-MAIL
+    // =====================================================
 
-  const handlePasswordChange = (text: string) => {
-    setPassword(text);
+    const validateEmail = () => {
 
-    if (passwordError) {
-      setPasswordError("");
-    }
-  };
+        if (!email.trim()) {
 
-  // =====================================================
-  // VALIDAÇÃO DO E-MAIL
-  // =====================================================
+            setEmailError("Informe seu e-mail.");
+            return false;
 
-  const validateEmail = () => {
-    if (!email.trim()) {
-      setEmailError("Informe seu e-mail.");
+        }
 
-      return false;
-    }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) {
 
-    if (!emailRegex.test(email)) {
-      setEmailError("Digite um e-mail válido.");
+            setEmailError("Digite um e-mail válido.");
+            return false;
 
-      return false;
-    }
+        }
 
-    setEmailError("");
+        setEmailError("");
 
-    return true;
-  };
+        return true;
+    };
 
-  // =====================================================
-  // VALIDAÇÃO DA SENHA
-  // =====================================================
+    // =====================================================
+    // VALIDAÇÃO DA SENHA
+    // =====================================================
 
-  const validatePassword = () => {
-    if (!password) {
-      setPasswordError("Informe sua senha.");
+    const validatePassword = () => {
 
-      return false;
-    }
+        if (!password) {
 
-    if (!hasSixCharacters) {
-      setPasswordError("A senha deve ter pelo menos 6 caracteres.");
+            setPasswordError("Informe sua senha.");
+            return false;
 
-      return false;
-    }
+        }
 
-    if (!hasUppercase) {
-      setPasswordError("A senha deve conter pelo menos uma letra maiúscula.");
+        if (!hasEightCharacters) {
 
-      return false;
-    }
+            setPasswordError(
+                "A senha deve ter pelo menos 8 caracteres."
+            );
 
-    if (!hasNumber) {
-      setPasswordError("A senha deve conter pelo menos um número.");
+            return false;
+        }
 
-      return false;
-    }
+        if (!hasLetter) {
 
-    setPasswordError("");
+            setPasswordError(
+                "A senha deve conter pelo menos uma letra."
+            );
 
-    return true;
-  };
+            return false;
+        }
 
-  // =====================================================
-  // LOGIN
-  // =====================================================
+        if (!hasNumber) {
 
-  const handleLogin = () => {
-    const emailIsValid = validateEmail();
-    const passwordIsValid = validatePassword();
+            setPasswordError(
+                "A senha deve conter pelo menos um número."
+            );
 
-    if (!emailIsValid || !passwordIsValid) {
-      Alert.alert("Atenção", "Por favor, verifique os dados informados.");
+            return false;
+        }
 
-      return;
-    }
+        if (!hasSymbol) {
 
-    Alert.alert("Login", "Login realizado com sucesso!");
+            setPasswordError(
+                "A senha deve conter pelo menos um símbolo."
+            );
 
-    // =================================================
-    // FUTURAMENTE:
-    // Aqui você poderá chamar a API de login.
-    //
-    // Exemplo:
-    // navigation.navigate("Home");
-    // =================================================
-  };
+            return false;
+        }
 
-  // =====================================================
-  // INTERFACE
-  // =====================================================
+        setPasswordError("");
 
-  return (
-    <View style={styles.container}>
-      {/* =================================================
-                DETALHE LARANJA SUPERIOR
-                ================================================= */}
+        return true;
+    };
 
-      <View style={styles.topAccent} />
+    // =====================================================
+    // LOGIN
+    // =====================================================
 
-      {/* =================================================
-                CONTEÚDO
-                ================================================= */}
+    const handleLogin = () => {
 
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
+        const emailIsValid = validateEmail();
+        const passwordIsValid = validatePassword();
 
-            transform: [
-              {
-                translateY: translateY,
-              },
-            ],
-          },
-        ]}
-      >
-        {/* =================================================
-                    LOGO
-                    ================================================= */}
+        if (!emailIsValid || !passwordIsValid) {
 
-        <Animated.View
-          style={{
-            transform: [
-              {
-                scale: logoScale,
-              },
-            ],
-          }}
-        >
-          <Image
-            source={require("../../assets/imagens/zappyfood_logo.png")}
-            style={styles.logo}
-          />
-        </Animated.View>
+            Alert.alert(
+                "Atenção",
+                "Por favor, verifique os dados informados."
+            );
 
-        {/* =================================================
-                    TÍTULO
-                    ================================================= */}
+            return;
+        }
 
-        <Text style={styles.title}>Bem-vindo de volta!</Text>
+        Alert.alert(
+            "Login",
+            "Login realizado com sucesso!"
+        );
 
-        <Text style={styles.subtitle}>Entre na sua conta para continuar.</Text>
+        // =================================================
+        // FUTURAMENTE:
+        // Aqui você poderá chamar a API de login.
+        //
+        // Exemplo:
+        // navigation.navigate("Home");
+        // =================================================
+    };
 
-        {/* =================================================
-                    FORMULÁRIO
-                    ================================================= */}
+    // =====================================================
+    // INTERFACE
+    // =====================================================
 
-        <View style={styles.form}>
-          {/* =================================================
-                        E-MAIL
-                        ================================================= */}
+    return (
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>E-MAIL</Text>
+        <View style={styles.container}>
 
-            <TextInput
-              style={[styles.input, emailError && styles.inputError]}
-              placeholder="Digite seu e-mail"
-              placeholderTextColor="#666666"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={handleEmailChange}
-            />
+            <View style={styles.topAccent} />
 
-            {emailError !== "" && (
-              <Text style={styles.errorText}>{emailError}</Text>
-            )}
-          </View>
-
-          {/* =================================================
-                        SENHA
-                        ================================================= */}
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>SENHA</Text>
-
-            <View
-              style={[
-                styles.passwordContainer,
-                passwordError && styles.passwordContainerError,
-              ]}
+            <KeyboardAvoidingView
+                style={styles.keyboardContainer}
+                behavior={
+                    Platform.OS === "ios"
+                        ? "padding"
+                        : undefined
+                }
             >
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Digite sua senha"
-                placeholderTextColor="#666666"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                value={password}
-                onChangeText={handlePasswordChange}
-              />
 
-              <Pressable
-                style={styles.showPasswordButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Text style={styles.showPasswordText}>
-                  {showPassword ? "OCULTAR" : "VER"}
-                </Text>
-              </Pressable>
-            </View>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
 
-            {passwordError !== "" && (
-              <Text style={styles.errorText}>{passwordError}</Text>
-            )}
-          </View>
+                    <Animated.View
+                        style={[
+                            styles.content,
+                            {
+                                opacity: fadeAnim,
+                                transform: [
+                                    {
+                                        translateY: translateY,
+                                    },
+                                ],
+                            },
+                        ]}
+                    >
 
-          {/* =================================================
-                        ESQUECI A SENHA
+                        {/* =================================================
+                                    LOGO
+                            ================================================= */}
+
+                        <Animated.View
+                            style={{
+                                transform: [
+                                    {
+                                        scale: logoScale,
+                                    },
+                                ],
+                            }}
+                        >
+
+                            <Image
+                                source={require("../../assets/imagens/zappyfood_logo.png")}
+                                style={styles.logo}
+                            />
+
+                        </Animated.View>
+
+                        {/* =================================================
+                                    TÍTULO
+                            ================================================= */}
+
+                        <Text style={styles.title}>
+                            Bem-vindo de volta!
+                        </Text>
+
+                        <Text style={styles.subtitle}>
+                            Entre na sua conta para continuar.
+                        </Text>
+
+                        {/* =================================================
+                                    FORMULÁRIO
+                            ================================================= */}
+
+                        <View style={styles.form}>
+
+                            {/* =================================================
+                                        E-MAIL
+                                ================================================= */}
+
+                            <View style={styles.inputContainer}>
+
+                                <Text style={styles.label}>
+                                    E-MAIL
+                                </Text>
+
+                                <TextInput
+                                    style={[
+                                        styles.input,
+                                        emailError && styles.inputError,
+                                    ]}
+                                    placeholder="Digite seu e-mail"
+                                    placeholderTextColor="#666666"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    autoComplete="email"
+                                    value={email}
+                                    onChangeText={handleEmailChange}
+                                />
+
+                                {emailError !== "" && (
+
+                                    <Text style={styles.errorText}>
+                                        {emailError}
+                                    </Text>
+
+                                )}
+
+                            </View>
+
+                            {/* =================================================
+                                        SENHA
+                                ================================================= */}
+
+                            <View style={styles.inputContainer}>
+
+                                <Text style={styles.label}>
+                                    SENHA
+                                </Text>
+
+                                <View
+                                    style={[
+                                        styles.passwordContainer,
+                                        passwordError &&
+                                        styles.passwordContainerError,
+                                    ]}
+                                >
+
+                                    <TextInput
+                                        style={styles.passwordInput}
+                                        placeholder="Digite sua senha"
+                                        placeholderTextColor="#666666"
+                                        secureTextEntry={!showPassword}
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                        value={password}
+                                        onChangeText={handlePasswordChange}
+                                    />
+
+                                    <Pressable
+                                        style={styles.showPasswordButton}
+                                        onPress={() =>
+                                            setShowPassword(!showPassword)
+                                        }
+                                    >
+
+                                        <Text style={styles.showPasswordText}>
+                                            {showPassword
+                                                ? "OCULTAR"
+                                                : "VER"}
+                                        </Text>
+
+                                    </Pressable>
+
+                                </View>
+
+                                {/* =================================================
+                                            REGRAS DA SENHA
+                                    ================================================= */}
+
+                                <View style={styles.passwordRules}>
+
+                                    <Text
+                                        style={[
+                                            styles.passwordRule,
+                                            hasEightCharacters &&
+                                            styles.passwordRuleValid,
+                                        ]}
+                                    >
+                                        {hasEightCharacters ? "✓" : "○"}{" "}
+                                        Mínimo de 8 caracteres
+                                    </Text>
+
+                                    <Text
+                                        style={[
+                                            styles.passwordRule,
+                                            hasLetter &&
+                                            styles.passwordRuleValid,
+                                        ]}
+                                    >
+                                        {hasLetter ? "✓" : "○"}{" "}
+                                        Pelo menos uma letra
+                                    </Text>
+
+                                    <Text
+                                        style={[
+                                            styles.passwordRule,
+                                            hasNumber &&
+                                            styles.passwordRuleValid,
+                                        ]}
+                                    >
+                                        {hasNumber ? "✓" : "○"}{" "}
+                                        Pelo menos um número
+                                    </Text>
+
+                                    <Text
+                                        style={[
+                                            styles.passwordRule,
+                                            hasSymbol &&
+                                            styles.passwordRuleValid,
+                                        ]}
+                                    >
+                                        {hasSymbol ? "✓" : "○"}{" "}
+                                        Pelo menos um símbolo
+                                    </Text>
+
+                                </View>
+
+                                {passwordError !== "" && (
+
+                                    <Text style={styles.errorText}>
+                                        {passwordError}
+                                    </Text>
+
+                                )}
+
+                            </View>
+
+                            {/* =================================================
+                                        ESQUECI A SENHA
+                                ================================================= */}
+
+                            <Pressable
+                                style={styles.forgotButton}
+                                onPress={() => {
+
+                                    Alert.alert(
+                                        "Esqueci minha senha",
+                                        "Informe seu e-mail para recuperar sua senha."
+                                    );
+
+                                }}
+                            >
+
+                                <Text style={styles.forgotText}>
+                                    Esqueci minha senha
+                                </Text>
+
+                            </Pressable>
+
+                            {/* =================================================
+                                        BOTÃO ENTRAR
+                                ================================================= */}
+
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.loginButton,
+                                    pressed &&
+                                    styles.loginButtonPressed,
+                                ]}
+                                onPress={handleLogin}
+                            >
+
+                                <Text style={styles.loginButtonText}>
+                                    ENTRAR
+                                </Text>
+
+                            </Pressable>
+
+                            {/* =================================================
+                                        SEPARADOR
+                                ================================================= */}
+
+                            <View style={styles.separatorContainer}>
+
+                                <View style={styles.separatorLine} />
+
+                                <Text style={styles.separatorText}>
+                                    ou
+                                </Text>
+
+                                <View style={styles.separatorLine} />
+
+                            </View>
+
+                            {/* =================================================
+                                        CADASTRO
+                                ================================================= */}
+
+                            <View style={styles.registerContainer}>
+
+                                <Text style={styles.registerText}>
+                                    Não tem uma conta?
+                                </Text>
+
+                                <Pressable
+                                    onPress={() =>
+                                        navigation.navigate("Register")
+                                    }
+                                >
+
+                                    <Text style={styles.registerLink}>
+                                        Cadastre-se
+                                    </Text>
+
+                                </Pressable>
+
+                            </View>
+
+                        </View>
+
+                    </Animated.View>
+
+                    {/* =================================================
+                                RODAPÉ
                         ================================================= */}
 
-          <Pressable
-            style={styles.forgotButton}
-            onPress={() => {
-              Alert.alert(
-                "Esqueci minha senha",
-                "Informe seu e-mail para recuperar sua senha.",
-              );
-            }}
-          >
-            <Text style={styles.forgotText}>Esqueci minha senha</Text>
-          </Pressable>
+                    <Text style={styles.footer}>
+                        ZAPPY FOOD
+                    </Text>
 
-          {/* =================================================
-                        BOTÃO ENTRAR
-                        ================================================= */}
+                </ScrollView>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.loginButton,
-              pressed && styles.loginButtonPressed,
-            ]}
-            onPress={handleLogin}
-          >
-            <Text style={styles.loginButtonText}>ENTRAR</Text>
-          </Pressable>
+            </KeyboardAvoidingView>
 
-          {/* =================================================
-                        SEPARADOR
-                        ================================================= */}
-
-          <View style={styles.separatorContainer}>
-            <View style={styles.separatorLine} />
-
-            <Text style={styles.separatorText}>ou</Text>
-
-            <View style={styles.separatorLine} />
-          </View>
-
-          {/* =================================================
-                        CADASTRO
-                        ================================================= */}
-
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Não tem uma conta?</Text>
-
-            <Pressable onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.registerLink}>Cadastre-se</Text>
-            </Pressable>
-          </View>
         </View>
-      </Animated.View>
-
-      {/* =================================================
-                RODAPÉ
-                ================================================= */}
-
-      <Text style={styles.footer}>ZAPPY FOOD</Text>
-    </View>
-  );
+    );
 }
 
 // =====================================================
@@ -378,277 +556,306 @@ export default function LoginScreen({ navigation }: any) {
 // =====================================================
 
 const styles = StyleSheet.create({
-  // ===================================================
-  // FUNDO
-  // ===================================================
 
-  container: {
-    flex: 1,
-    backgroundColor: "#111111",
-    alignItems: "center",
-    paddingHorizontal: 28,
-  },
+    // ===================================================
+    // FUNDO
+    // ===================================================
 
-  // ===================================================
-  // DETALHE SUPERIOR
-  // ===================================================
-
-  topAccent: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: "#F58427",
-  },
-
-  // ===================================================
-  // CONTEÚDO
-  // ===================================================
-
-  content: {
-    width: "100%",
-    maxWidth: 380,
-    alignItems: "center",
-    marginTop: 55,
-  },
-
-  // ===================================================
-  // LOGO
-  // ===================================================
-
-  logo: {
-    width: 105,
-    height: 105,
-    resizeMode: "contain",
-  },
-
-  // ===================================================
-  // TÍTULO
-  // ===================================================
-
-  title: {
-    marginTop: 12,
-    fontSize: 25,
-    fontWeight: "900",
-    color: "#FFFFFF",
-    letterSpacing: -0.5,
-  },
-
-  // ===================================================
-  // SUBTÍTULO
-  // ===================================================
-
-  subtitle: {
-    marginTop: 7,
-    fontSize: 13,
-    color: "#858585",
-    fontWeight: "500",
-  },
-
-  // ===================================================
-  // FORMULÁRIO
-  // ===================================================
-
-  form: {
-    width: "100%",
-    marginTop: 32,
-  },
-
-  // ===================================================
-  // INPUT
-  // ===================================================
-
-  inputContainer: {
-    marginBottom: 18,
-  },
-
-  label: {
-    marginBottom: 8,
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-    color: "#F58427",
-  },
-
-  input: {
-    width: "100%",
-    height: 54,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: "#333333",
-    backgroundColor: "#181818",
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: "#FFFFFF",
-  },
-
-  // ===================================================
-  // INPUT COM ERRO
-  // ===================================================
-
-  inputError: {
-    borderColor: "#E05A47",
-  },
-
-  errorText: {
-    marginTop: 6,
-    fontSize: 10,
-    color: "#E05A47",
-    fontWeight: "600",
-  },
-
-  // ===================================================
-  // SENHA
-  // ===================================================
-
-  passwordContainer: {
-    width: "100%",
-    height: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: "#333333",
-    backgroundColor: "#181818",
-  },
-
-  passwordContainerError: {
-    borderColor: "#E05A47",
-  },
-
-  passwordInput: {
-    flex: 1,
-    height: "100%",
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: "#FFFFFF",
-  },
-
-  showPasswordButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-  },
-
-  showPasswordText: {
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1,
-    color: "#777777",
-  },
-
-  // ===================================================
-  // ESQUECI SENHA
-  // ===================================================
-
-  forgotButton: {
-    alignSelf: "flex-end",
-    marginTop: -5,
-    marginBottom: 22,
-  },
-
-  forgotText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#F58427",
-  },
-
-  // ===================================================
-  // BOTÃO ENTRAR
-  // ===================================================
-
-  loginButton: {
-    width: "100%",
-    height: 54,
-    borderRadius: 11,
-    backgroundColor: "#F58427",
-    alignItems: "center",
-    justifyContent: "center",
-
-    shadowColor: "#F58427",
-
-    shadowOffset: {
-      width: 0,
-      height: 5,
+    container: {
+        flex: 1,
+        backgroundColor: "#111111",
+        alignItems: "center",
     },
 
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    elevation: 5,
-  },
+    keyboardContainer: {
+        flex: 1,
+        width: "100%",
+    },
 
-  loginButtonPressed: {
-    opacity: 0.75,
-    transform: [
-      {
-        scale: 0.98,
-      },
-    ],
-  },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 28,
+    },
 
-  loginButtonText: {
-    color: "#111111",
-    fontSize: 15,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
+    // ===================================================
+    // DETALHE SUPERIOR
+    // ===================================================
 
-  // ===================================================
-  // SEPARADOR
-  // ===================================================
+    topAccent: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 4,
+        backgroundColor: "#F58427",
+        zIndex: 10,
+    },
 
-  separatorContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 25,
-    marginBottom: 22,
-  },
+    // ===================================================
+    // CONTEÚDO
+    // ===================================================
 
-  separatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#292929",
-  },
+    content: {
+        width: "100%",
+        maxWidth: 380,
+        alignSelf: "center",
+        alignItems: "center",
+        marginTop: 55,
+    },
 
-  separatorText: {
-    marginHorizontal: 13,
-    fontSize: 11,
-    color: "#555555",
-  },
+    // ===================================================
+    // LOGO
+    // ===================================================
 
-  // ===================================================
-  // CADASTRO
-  // ===================================================
+    logo: {
+        width: 105,
+        height: 105,
+        resizeMode: "contain",
+    },
 
-  registerContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+    // ===================================================
+    // TÍTULO
+    // ===================================================
 
-  registerText: {
-    fontSize: 12,
-    color: "#777777",
-  },
+    title: {
+        marginTop: 12,
+        fontSize: 25,
+        fontWeight: "900",
+        color: "#FFFFFF",
+        letterSpacing: -0.5,
+    },
 
-  registerLink: {
-    marginLeft: 5,
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#F58427",
-  },
+    // ===================================================
+    // SUBTÍTULO
+    // ===================================================
 
-  // ===================================================
-  // RODAPÉ
-  // ===================================================
+    subtitle: {
+        marginTop: 7,
+        fontSize: 13,
+        color: "#858585",
+        fontWeight: "500",
+        textAlign: "center",
+    },
 
-  footer: {
-    position: "absolute",
-    bottom: 27,
-    fontSize: 8,
-    fontWeight: "700",
-    letterSpacing: 3,
-    color: "#444444",
-  },
+    // ===================================================
+    // FORMULÁRIO
+    // ===================================================
+
+    form: {
+        width: "100%",
+        marginTop: 32,
+    },
+
+    // ===================================================
+    // INPUT
+    // ===================================================
+
+    inputContainer: {
+        marginBottom: 18,
+    },
+
+    label: {
+        marginBottom: 8,
+        fontSize: 10,
+        fontWeight: "800",
+        letterSpacing: 1.5,
+        color: "#F58427",
+    },
+
+    input: {
+        width: "100%",
+        height: 54,
+        borderRadius: 11,
+        borderWidth: 1,
+        borderColor: "#333333",
+        backgroundColor: "#181818",
+        paddingHorizontal: 16,
+        fontSize: 14,
+        color: "#FFFFFF",
+    },
+
+    inputError: {
+        borderColor: "#E05A47",
+    },
+
+    errorText: {
+        marginTop: 6,
+        fontSize: 10,
+        color: "#E05A47",
+        fontWeight: "600",
+        lineHeight: 14,
+    },
+
+    // ===================================================
+    // SENHA
+    // ===================================================
+
+    passwordContainer: {
+        width: "100%",
+        height: 54,
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 11,
+        borderWidth: 1,
+        borderColor: "#333333",
+        backgroundColor: "#181818",
+    },
+
+    passwordContainerError: {
+        borderColor: "#E05A47",
+    },
+
+    passwordInput: {
+        flex: 1,
+        height: "100%",
+        paddingHorizontal: 16,
+        fontSize: 14,
+        color: "#FFFFFF",
+    },
+
+    showPasswordButton: {
+        paddingHorizontal: 15,
+        paddingVertical: 15,
+    },
+
+    showPasswordText: {
+        fontSize: 9,
+        fontWeight: "800",
+        letterSpacing: 1,
+        color: "#777777",
+    },
+
+    // ===================================================
+    // REGRAS DA SENHA
+    // ===================================================
+
+    passwordRules: {
+        marginTop: 8,
+        marginLeft: 3,
+        marginBottom: 2,
+    },
+
+    passwordRule: {
+        fontSize: 10,
+        color: "#555555",
+        marginBottom: 3,
+    },
+
+    passwordRuleValid: {
+        color: "#F58427",
+        fontWeight: "700",
+    },
+
+    // ===================================================
+    // ESQUECI SENHA
+    // ===================================================
+
+    forgotButton: {
+        alignSelf: "flex-end",
+        marginTop: 2,
+        marginBottom: 22,
+    },
+
+    forgotText: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: "#F58427",
+    },
+
+    // ===================================================
+    // BOTÃO ENTRAR
+    // ===================================================
+
+    loginButton: {
+        width: "100%",
+        height: 54,
+        borderRadius: 11,
+        backgroundColor: "#F58427",
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#F58427",
+        shadowOffset: {
+            width: 0,
+            height: 5,
+        },
+        shadowOpacity: 0.22,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+
+    loginButtonPressed: {
+        opacity: 0.75,
+        transform: [
+            {
+                scale: 0.98,
+            },
+        ],
+    },
+
+    loginButtonText: {
+        color: "#111111",
+        fontSize: 15,
+        fontWeight: "900",
+        letterSpacing: 1,
+    },
+
+    // ===================================================
+    // SEPARADOR
+    // ===================================================
+
+    separatorContainer: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 25,
+        marginBottom: 22,
+    },
+
+    separatorLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: "#292929",
+    },
+
+    separatorText: {
+        marginHorizontal: 13,
+        fontSize: 11,
+        color: "#555555",
+    },
+
+    // ===================================================
+    // CADASTRO
+    // ===================================================
+
+    registerContainer: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    registerText: {
+        fontSize: 12,
+        color: "#777777",
+    },
+
+    registerLink: {
+        marginLeft: 5,
+        fontSize: 12,
+        fontWeight: "800",
+        color: "#F58427",
+    },
+
+    // ===================================================
+    // RODAPÉ
+    // ===================================================
+
+    footer: {
+        marginTop: 35,
+        marginBottom: 27,
+        alignSelf: "center",
+        fontSize: 8,
+        fontWeight: "700",
+        letterSpacing: 3,
+        color: "#444444",
+    },
 });
