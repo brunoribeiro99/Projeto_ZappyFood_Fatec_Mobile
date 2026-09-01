@@ -357,7 +357,7 @@ export default function LoginScreen({ navigation }: any) {
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Não tem uma conta?</Text>
 
-            <Pressable onPress={() => navigation.navigate("Cadastro")}>
+            <Pressable onPress={() => navigation.navigate("Register")}>
               <Text style={styles.registerLink}>Cadastre-se</Text>
             </Pressable>
           </View>
