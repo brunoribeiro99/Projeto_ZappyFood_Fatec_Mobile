@@ -1,4 +1,6 @@
+import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useEffect, useRef, useState } from "react";
+import { auth } from "./services/firebaseConfig";
 
 import {
   Alert,
@@ -163,27 +165,52 @@ export default function LoginScreen({ navigation }: any) {
   // LOGIN
   // =====================================================
 
-  const handleLogin = () => {
-    console.log("CLICOU NO BOTÃO ENTRAR");
-
+  const handleLogin = async () => {
     const emailIsValid = validateEmail();
     const passwordIsValid = validatePassword();
-
-    console.log("E-mail válido:", emailIsValid);
-    console.log("Senha válida:", passwordIsValid);
 
     if (!emailIsValid || !passwordIsValid) {
       Alert.alert("Atenção", "Por favor, verifique os dados informados.");
       return;
     }
 
-    console.log("LOGIN VALIDADO");
-    console.log("INDO PARA DASHBOARD");
+    try {
+      console.log("Tentando autenticar no Firebase...");
 
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Dashboard" }],
-    });
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password,
+      );
+
+      console.log("Login realizado:", userCredential.user.uid);
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Dashboard" }],
+      });
+    } catch (error: any) {
+      console.log("Erro no login Firebase:", error);
+
+      let mensagem = "Não foi possível realizar o login.";
+
+      if (
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-login-credentials"
+      ) {
+        mensagem = "E-mail ou senha incorretos.";
+      } else if (error.code === "auth/user-not-found") {
+        mensagem = "Usuário não encontrado.";
+      } else if (error.code === "auth/wrong-password") {
+        mensagem = "Senha incorreta.";
+      } else if (error.code === "auth/invalid-email") {
+        mensagem = "E-mail inválido.";
+      } else if (error.code === "auth/too-many-requests") {
+        mensagem = "Muitas tentativas de login. Aguarde alguns minutos.";
+      }
+
+      Alert.alert("Não foi possível entrar", mensagem);
+    }
   };
 
   // =====================================================
