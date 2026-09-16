@@ -3,338 +3,213 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
 
 export default function SplashScreen({ navigation }: any) {
   // =====================================================
-  // ANIMAÇÕES
+  // ESTADOS DE ANIMAÇÃO
   // =====================================================
+  // Controla o Giro de Pião (0 a 1)
+  const spinAnim = useRef(new Animated.Value(0)).current;
 
-  const lineWidth = useRef(new Animated.Value(0)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.65)).current;
+  // Estados originais para o texto e detalhes
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslate = useRef(new Animated.Value(15)).current;
+  const titleY = useRef(new Animated.Value(18)).current;
+  const titleScale = useRef(new Animated.Value(0.96)).current;
+
   const sloganOpacity = useRef(new Animated.Value(0)).current;
+  const sloganY = useRef(new Animated.Value(10)).current;
+
+  const accentScale = useRef(new Animated.Value(0)).current;
+
+  // =====================================================
+  // INTERPOLAÇÃO DO GIRO 3D (Eixo Y)
+  // =====================================================
+  const spinY = spinAnim.interpolate({
+    inputRange: [0, 0.4, 0.8, 1],
+    outputRange: ["0deg", "-360deg", "360deg", "0deg"],
+  });
 
   useEffect(() => {
-    // ===================================================
-    // 1. LINHA LARANJA
-    // ===================================================
-
-    Animated.timing(lineWidth, {
-      toValue: 1,
-      duration: 650,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-
-    // ===================================================
-    // 2. LOGO
-    // ===================================================
-
+    // Sequência de animações cronometradas da sua Splash
     Animated.sequence([
-      Animated.delay(350),
-      Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 550,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
+      Animated.delay(200),
 
-        Animated.spring(logoScale, {
-          toValue: 1,
-          friction: 7,
-          tension: 55,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
+      // 1. EFEITO DO PIÃO (Gira para a esquerda e regressa para a direita)
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 1500,
+        easing: Easing.bezier(0.25, 1, 0.5, 1),
+        useNativeDriver: true,
+      }),
 
-    // ===================================================
-    // 3. NOME
-    // ===================================================
-
-    Animated.sequence([
-      Animated.delay(750),
+      // 2. ENTRADA DO NOME ZAPPYFOOD (Mantendo a sua lógica original)
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
-          duration: 500,
+          duration: 350,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-
-        Animated.timing(titleTranslate, {
+        Animated.timing(titleY, {
           toValue: 0,
-          duration: 500,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(titleScale, {
+          toValue: 1,
+          friction: 8,
+          tension: 70,
+          useNativeDriver: true,
+        }),
+        Animated.spring(accentScale, {
+          toValue: 1,
+          friction: 7,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+      ]),
+
+      // 3. ENTRADA DO SLOGAN
+      Animated.parallel([
+        Animated.timing(sloganOpacity, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(sloganY, {
+          toValue: 0,
+          duration: 400,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
     ]).start();
 
-    // ===================================================
-    // 4. SLOGAN
-    // ===================================================
-
-    Animated.sequence([
-      Animated.delay(1150),
-      Animated.timing(sloganOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // ===================================================
-    // 5. IR PARA LOGIN APÓS 6 SEGUNDOS
-    // ===================================================
-
+    // 4. REDIRECIONAMENTO NATIVO PARA O SEU LOGIN
     const timer = setTimeout(() => {
       navigation.replace("Login");
-    }, 6000);
-
-    // ===================================================
-    // LIMPEZA
-    // ===================================================
+    }, 3500);
 
     return () => {
       clearTimeout(timer);
-
-      lineWidth.stopAnimation();
-      logoOpacity.stopAnimation();
-      logoScale.stopAnimation();
+      spinAnim.stopAnimation();
       titleOpacity.stopAnimation();
-      titleTranslate.stopAnimation();
+      titleY.stopAnimation();
+      titleScale.stopAnimation();
       sloganOpacity.stopAnimation();
+      sloganY.stopAnimation();
+      accentScale.stopAnimation();
     };
   }, [navigation]);
 
-  // =====================================================
-  // INTERPOLAÇÃO DA LINHA
-  // =====================================================
-
-  const animatedLineWidth = lineWidth.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-  });
-
-  // =====================================================
-  // INTERFACE
-  // =====================================================
-
   return (
     <View style={styles.container}>
-      {/* =================================================
-          LINHA LARANJA SUPERIOR
-          ================================================= */}
+      <View style={styles.backgroundGlow} />
 
-      <View style={styles.lineBackground}>
-        <Animated.View
-          style={[
-            styles.line,
-            {
-              width: animatedLineWidth,
-            },
-          ]}
-        />
-      </View>
-
-      {/* =================================================
-          PEQUENO CÓDIGO DA MARCA
-          ================================================= */}
-
-      <Text style={styles.brandCode}>ZF / 01</Text>
-
-      {/* =================================================
-          CONTEÚDO CENTRAL
-          ================================================= */}
-
-      <View style={styles.center}>
-        {/* LOGO */}
-
+      {/* ÁREA DA LOGO CORRIGIDA: Sem fatias, girando a imagem inteira uniformemente */}
+      <View style={styles.logoArea}>
         <Animated.View
           style={[
             styles.logoContainer,
             {
-              opacity: logoOpacity,
-              transform: [
-                {
-                  scale: logoScale,
-                },
-              ],
+              transform: [{ rotateY: spinY }],
             },
           ]}
         >
           <Image
             source={require("../../assets/imagens/zappyfood_logo.png")}
-            style={styles.logo}
+            style={styles.logoImage}
+            resizeMode="contain"
           />
         </Animated.View>
+      </View>
 
-        {/* NOME */}
-
+      {/* Conteúdo de Texto e Detalhe Laranja */}
+      <View style={styles.textContainer}>
         <Animated.View
-          style={{
-            opacity: titleOpacity,
-            transform: [
-              {
-                translateY: titleTranslate,
-              },
-            ],
-          }}
-        >
-          <Text style={styles.title}>
-            Zappy
-            <Text style={styles.orange}>Food</Text>
-          </Text>
-        </Animated.View>
-
-        {/* SLOGAN */}
-
-        <Animated.Text
           style={[
-            styles.slogan,
+            styles.titleWrapper,
             {
-              opacity: sloganOpacity,
+              opacity: titleOpacity,
+              transform: [{ translateY: titleY }, { scale: titleScale }],
             },
           ]}
         >
-          CHEGUE. PEÇA. APROVEITE.
-        </Animated.Text>
-      </View>
+          <Text style={styles.titleText}>ZappyFood</Text>
+          <Animated.View
+            style={[styles.accentDot, { transform: [{ scale: accentScale }] }]}
+          />
+        </Animated.View>
 
-      {/* =================================================
-          DETALHE INFERIOR
-          ================================================= */}
-
-      <View style={styles.bottomArea}>
-        <View style={styles.bottomLine} />
-
-        <Text style={styles.bottomText}>UMA NOVA FORMA DE PEDIR</Text>
+        <Animated.View
+          style={{
+            opacity: sloganOpacity,
+            transform: [{ translateY: sloganY }],
+          }}
+        >
+          <Text style={styles.sloganText}>
+            A sua comida favorita num estalar de dedos.
+          </Text>
+        </Animated.View>
       </View>
     </View>
   );
 }
 
-// =====================================================
-// ESTILOS
-// =====================================================
-
 const styles = StyleSheet.create({
-  // ===================================================
-  // FUNDO
-  // ===================================================
-
   container: {
     flex: 1,
-    backgroundColor: "#0B0B0B",
+    backgroundColor: "#121212",
     alignItems: "center",
     justifyContent: "center",
   },
-
-  // ===================================================
-  // LINHA SUPERIOR
-  // ===================================================
-
-  lineBackground: {
+  backgroundGlow: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: 3,
-    backgroundColor: "#1A1A1A",
-  },
-
-  line: {
-    height: 3,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
     backgroundColor: "#F58427",
+    opacity: 0.035,
   },
-
-  // ===================================================
-  // IDENTIFICAÇÃO
-  // ===================================================
-
-  brandCode: {
-    position: "absolute",
-    top: 28,
-    right: 25,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 2,
-    color: "#555555",
-  },
-
-  // ===================================================
-  // CENTRO
-  // ===================================================
-
-  center: {
-    alignItems: "center",
+  logoArea: {
+    height: 180,
     justifyContent: "center",
+    alignItems: "center",
   },
-
-  // ===================================================
-  // LOGO
-  // ===================================================
-
   logoContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  logo: {
     width: 180,
     height: 180,
-    resizeMode: "contain",
+    justifyContent: "center",
+    alignItems: "center",
+    backfaceVisibility: "visible", // Garante o suporte à perspetiva 3D no iOS e Android
   },
-
-  // ===================================================
-  // NOME
-  // ===================================================
-
-  title: {
-    marginTop: 10,
-    fontSize: 40,
-    fontWeight: "900",
-    letterSpacing: -1.5,
-    color: "#FFFFFF",
+  logoImage: {
+    width: "100%",
+    height: "100%",
   },
-
-  orange: {
-    color: "#F58427",
-  },
-
-  // ===================================================
-  // SLOGAN
-  // ===================================================
-
-  slogan: {
-    marginTop: 12,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 3,
-    color: "#777777",
-  },
-
-  // ===================================================
-  // RODAPÉ
-  // ===================================================
-
-  bottomArea: {
-    position: "absolute",
-    bottom: 30,
+  textContainer: {
+    marginTop: 40,
     alignItems: "center",
   },
-
-  bottomLine: {
-    width: 35,
-    height: 2,
-    marginBottom: 10,
-    backgroundColor: "#F58427",
+  titleWrapper: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    marginBottom: 8,
   },
-
-  bottomText: {
-    fontSize: 8,
-    fontWeight: "700",
-    letterSpacing: 2,
-    color: "#444444",
+  titleText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  accentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FF6600",
+    marginLeft: 4,
+  },
+  sloganText: {
+    fontSize: 14,
+    color: "#AAAAAA",
+    textAlign: "center",
   },
 });

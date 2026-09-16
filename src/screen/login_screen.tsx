@@ -1,13 +1,11 @@
 import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useEffect, useRef, useState } from "react";
-import { auth } from "./services/firebaseConfig";
-
 import {
-  Alert,
   Animated,
   Easing,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -16,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { auth } from "./services/firebaseConfig";
 
 export default function LoginScreen({ navigation }: any) {
   // =====================================================
@@ -24,18 +23,37 @@ export default function LoginScreen({ navigation }: any) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
 
   // =====================================================
-  // REGRAS DA SENHA
+  // ESTADOS DO MODAL
   // =====================================================
 
-  const hasEightCharacters = password.length >= 8;
-  const hasLetter = /[A-Za-z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSymbol = /[^A-Za-z\d]/.test(password);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"success" | "error" | "warning">(
+    "error",
+  );
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  // =====================================================
+  // FUNÇÃO DO MODAL
+  // =====================================================
+
+  const showModal = (
+    type: "success" | "error" | "warning",
+    title: string,
+    message: string,
+  ) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   // =====================================================
   // ANIMAÇÕES
@@ -137,26 +155,6 @@ export default function LoginScreen({ navigation }: any) {
       return false;
     }
 
-    if (!hasEightCharacters) {
-      setPasswordError("A senha deve ter pelo menos 8 caracteres.");
-      return false;
-    }
-
-    if (!hasLetter) {
-      setPasswordError("A senha deve conter pelo menos uma letra.");
-      return false;
-    }
-
-    if (!hasNumber) {
-      setPasswordError("A senha deve conter pelo menos um número.");
-      return false;
-    }
-
-    if (!hasSymbol) {
-      setPasswordError("A senha deve conter pelo menos um símbolo.");
-      return false;
-    }
-
     setPasswordError("");
     return true;
   };
@@ -170,7 +168,6 @@ export default function LoginScreen({ navigation }: any) {
     const passwordIsValid = validatePassword();
 
     if (!emailIsValid || !passwordIsValid) {
-      Alert.alert("Atenção", "Por favor, verifique os dados informados.");
       return;
     }
 
@@ -192,25 +189,103 @@ export default function LoginScreen({ navigation }: any) {
     } catch (error: any) {
       console.log("Erro no login Firebase:", error);
 
-      let mensagem = "Não foi possível realizar o login.";
+      // =====================================================
+      // QUALQUER ERRO DE CREDENCIAL
+      // =====================================================
 
       if (
         error.code === "auth/invalid-credential" ||
-        error.code === "auth/invalid-login-credentials"
+        error.code === "auth/invalid-login-credentials" ||
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password"
       ) {
-        mensagem = "E-mail ou senha incorretos.";
-      } else if (error.code === "auth/user-not-found") {
-        mensagem = "Usuário não encontrado.";
-      } else if (error.code === "auth/wrong-password") {
-        mensagem = "Senha incorreta.";
-      } else if (error.code === "auth/invalid-email") {
-        mensagem = "E-mail inválido.";
-      } else if (error.code === "auth/too-many-requests") {
-        mensagem = "Muitas tentativas de login. Aguarde alguns minutos.";
+        showModal(
+          "error",
+          "Não foi possível entrar",
+          "E-mail ou senha incorretos.",
+        );
+
+        return;
       }
 
-      Alert.alert("Não foi possível entrar", mensagem);
+      // =====================================================
+      // E-MAIL INVÁLIDO
+      // =====================================================
+
+      if (error.code === "auth/invalid-email") {
+        showModal(
+          "warning",
+          "E-mail inválido",
+          "Digite um endereço de e-mail válido para continuar.",
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // MUITAS TENTATIVAS
+      // =====================================================
+
+      if (error.code === "auth/too-many-requests") {
+        showModal(
+          "warning",
+          "Muitas tentativas",
+          "Foram detectadas muitas tentativas de login. Aguarde alguns minutos e tente novamente.",
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // ERRO DESCONHECIDO
+      // =====================================================
+
+      showModal(
+        "error",
+        "Erro ao entrar",
+        "Não foi possível realizar o login. Tente novamente.",
+      );
     }
+  };
+
+  // =====================================================
+  // ESQUECI A SENHA
+  // =====================================================
+
+  const handleForgotPassword = () => {
+    showModal(
+      "warning",
+      "Esqueci minha senha",
+      "Informe seu e-mail para recuperar sua senha.",
+    );
+  };
+
+  // =====================================================
+  // ÍCONE DO MODAL
+  // =====================================================
+
+  const getModalIcon = () => {
+    if (modalType === "success") {
+      return "✓";
+    }
+
+    if (modalType === "warning") {
+      return "!";
+    }
+
+    return "×";
+  };
+
+  const getModalIconColor = () => {
+    if (modalType === "success") {
+      return "#43A047";
+    }
+
+    if (modalType === "warning") {
+      return "#F58427";
+    }
+
+    return "#E05A47";
   };
 
   // =====================================================
@@ -219,8 +294,8 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      {" "}
       <View style={styles.topAccent} />
-
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -244,8 +319,8 @@ export default function LoginScreen({ navigation }: any) {
             ]}
           >
             {/* =================================================
-                            LOGO
-                        ================================================= */}
+            LOGO
+            ================================================= */}
 
             <Animated.View
               style={{
@@ -263,8 +338,8 @@ export default function LoginScreen({ navigation }: any) {
             </Animated.View>
 
             {/* =================================================
-                            TÍTULO
-                        ================================================= */}
+            TÍTULO
+            ================================================= */}
 
             <Text style={styles.title}>Bem-vindo de volta!</Text>
 
@@ -273,13 +348,13 @@ export default function LoginScreen({ navigation }: any) {
             </Text>
 
             {/* =================================================
-                            FORMULÁRIO
-                        ================================================= */}
+            FORMULÁRIO
+            ================================================= */}
 
             <View style={styles.form}>
               {/* =================================================
-                                E-MAIL
-                            ================================================= */}
+              E-MAIL
+              ================================================= */}
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>E-MAIL</Text>
@@ -302,8 +377,8 @@ export default function LoginScreen({ navigation }: any) {
               </View>
 
               {/* =================================================
-                                SENHA
-                            ================================================= */}
+              SENHA
+              ================================================= */}
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>SENHA</Text>
@@ -335,72 +410,25 @@ export default function LoginScreen({ navigation }: any) {
                   </Pressable>
                 </View>
 
-                {/* =================================================
-                                    REGRAS DA SENHA
-                                ================================================= */}
-
-                <View style={styles.passwordRules}>
-                  <Text
-                    style={[
-                      styles.passwordRule,
-                      hasEightCharacters && styles.passwordRuleValid,
-                    ]}
-                  >
-                    {hasEightCharacters ? "✓" : "○"} Mínimo de 8 caracteres
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.passwordRule,
-                      hasLetter && styles.passwordRuleValid,
-                    ]}
-                  >
-                    {hasLetter ? "✓" : "○"} Pelo menos uma letra
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.passwordRule,
-                      hasNumber && styles.passwordRuleValid,
-                    ]}
-                  >
-                    {hasNumber ? "✓" : "○"} Pelo menos um número
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.passwordRule,
-                      hasSymbol && styles.passwordRuleValid,
-                    ]}
-                  >
-                    {hasSymbol ? "✓" : "○"} Pelo menos um símbolo
-                  </Text>
-                </View>
-
                 {passwordError !== "" && (
                   <Text style={styles.errorText}>{passwordError}</Text>
                 )}
               </View>
 
               {/* =================================================
-                                ESQUECI A SENHA
-                            ================================================= */}
+              ESQUECI A SENHA
+              ================================================= */}
 
               <Pressable
                 style={styles.forgotButton}
-                onPress={() => {
-                  Alert.alert(
-                    "Esqueci minha senha",
-                    "Informe seu e-mail para recuperar sua senha.",
-                  );
-                }}
+                onPress={handleForgotPassword}
               >
                 <Text style={styles.forgotText}>Esqueci minha senha</Text>
               </Pressable>
 
               {/* =================================================
-                                BOTÃO ENTRAR
-                            ================================================= */}
+              BOTÃO ENTRAR
+              ================================================= */}
 
               <Pressable
                 style={({ pressed }) => [
@@ -413,8 +441,8 @@ export default function LoginScreen({ navigation }: any) {
               </Pressable>
 
               {/* =================================================
-                                SEPARADOR
-                            ================================================= */}
+              SEPARADOR
+              ================================================= */}
 
               <View style={styles.separatorContainer}>
                 <View style={styles.separatorLine} />
@@ -425,8 +453,8 @@ export default function LoginScreen({ navigation }: any) {
               </View>
 
               {/* =================================================
-                                CADASTRO
-                            ================================================= */}
+              CADASTRO
+              ================================================= */}
 
               <View style={styles.registerContainer}>
                 <Text style={styles.registerText}>Não tem uma conta?</Text>
@@ -439,12 +467,59 @@ export default function LoginScreen({ navigation }: any) {
           </Animated.View>
 
           {/* =================================================
-                        RODAPÉ
-                    ================================================= */}
+          RODAPÉ
+          ================================================= */}
 
           <Text style={styles.footer}>ZAPPY FOOD</Text>
         </ScrollView>
       </KeyboardAvoidingView>
+      {/* =====================================================
+      MODAL
+      ===================================================== */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View
+              style={[
+                styles.modalIcon,
+                {
+                  backgroundColor: `${getModalIconColor()}18`,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.modalIconText,
+                  {
+                    color: getModalIconColor(),
+                  },
+                ]}
+              >
+                {getModalIcon()}
+              </Text>
+            </View>
+
+            <Text style={styles.modalTitle}>{modalTitle}</Text>
+
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.modalButton,
+                pressed && styles.modalButtonPressed,
+              ]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>ENTENDI</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -464,10 +539,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  // ===================================================
+  // CONTROLE DO TECLADO
+  // ===================================================
+
   keyboardContainer: {
     flex: 1,
     width: "100%",
   },
+
+  // ===================================================
+  // SCROLL
+  // ===================================================
 
   scrollContent: {
     flexGrow: 1,
@@ -623,27 +706,6 @@ const styles = StyleSheet.create({
   },
 
   // ===================================================
-  // REGRAS DA SENHA
-  // ===================================================
-
-  passwordRules: {
-    marginTop: 8,
-    marginLeft: 3,
-    marginBottom: 2,
-  },
-
-  passwordRule: {
-    fontSize: 10,
-    color: "#555555",
-    marginBottom: 3,
-  },
-
-  passwordRuleValid: {
-    color: "#F58427",
-    fontWeight: "700",
-  },
-
-  // ===================================================
   // ESQUECI SENHA
   // ===================================================
 
@@ -754,5 +816,85 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 3,
     color: "#444444",
+  },
+
+  // ===================================================
+  // MODAL
+  // ===================================================
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.78)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+
+  modalContainer: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#181818",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#292929",
+    paddingHorizontal: 25,
+    paddingTop: 28,
+    paddingBottom: 22,
+    alignItems: "center",
+  },
+
+  modalIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 17,
+  },
+
+  modalIconText: {
+    fontSize: 30,
+    fontWeight: "900",
+  },
+
+  modalTitle: {
+    color: "#FFFFFF",
+    fontSize: 19,
+    fontWeight: "900",
+    textAlign: "center",
+    marginBottom: 9,
+  },
+
+  modalMessage: {
+    color: "#8C8C8C",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    marginBottom: 23,
+  },
+
+  modalButton: {
+    width: "100%",
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: "#F58427",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  modalButtonPressed: {
+    opacity: 0.75,
+    transform: [
+      {
+        scale: 0.98,
+      },
+    ],
+  },
+
+  modalButtonText: {
+    color: "#111111",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
   },
 });

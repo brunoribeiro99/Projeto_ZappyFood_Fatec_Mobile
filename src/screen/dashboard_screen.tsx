@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 export default function RestaurantWelcome() {
   const [status, setStatus] = useState<"open" | "closed" | null>(null);
@@ -38,7 +38,7 @@ export default function RestaurantWelcome() {
           <Text style={styles.logo}>
             ZAPPY<Text style={styles.logoOrange}>FOOD</Text>
           </Text>{" "}
-          <Text style={styles.welcome}>Bem-vindo! 👋</Text>{" "}
+          <Text style={styles.welcome}>Bem-vindo! </Text>{" "}
           <Text style={styles.date}>{date}</Text>{" "}
           <Text style={styles.time}>{time}</Text>{" "}
         </View>{" "}

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import {
-  Alert,
   Animated,
+  DimensionValue,
   Easing,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -26,22 +27,96 @@ export default function CadastroScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // =====================================================
+  // MODAL
+  // =====================================================
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"success" | "error" | "warning">(
+    "success",
+  );
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  // =====================================================
+  // FUNÇÃO DO MODAL
+  // =====================================================
+
+  const showModal = (
+    type: "success" | "error" | "warning",
+    title: string,
+    message: string,
+  ) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   // =====================================================
   // REGRAS DA SENHA
   // =====================================================
 
   const hasEightCharacters = password.length >= 8;
-  const hasLetter = /[A-Za-z]/.test(password);
+  const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /\d/.test(password);
   const hasSymbol = /[^A-Za-z\d]/.test(password);
+
+  const passwordScore = [
+    hasEightCharacters,
+    hasUppercase,
+    hasNumber,
+    hasSymbol,
+  ].filter(Boolean).length;
+
+  const getPasswordStrength = () => {
+    if (!password) {
+      return {
+        level: 0,
+        text: "",
+        color: "#333333",
+        width: "0%" as DimensionValue,
+      };
+    }
+
+    if (passwordScore <= 1) {
+      return {
+        level: 1,
+        text: "Senha fraca",
+        color: "#E53935",
+        width: "33%" as DimensionValue,
+      };
+    }
+
+    if (passwordScore <= 3) {
+      return {
+        level: 2,
+        text: "Senha média",
+        color: "#F58427",
+        width: "66%" as DimensionValue,
+      };
+    }
+
+    return {
+      level: 3,
+      text: "Senha forte",
+      color: "#43A047",
+      width: "100%" as DimensionValue,
+    };
+  };
+
+  const passwordStrength = getPasswordStrength();
 
   // =====================================================
   // ANIMAÇÕES
@@ -103,9 +178,7 @@ export default function CadastroScreen({ navigation }: any) {
   // =====================================================
 
   const handleEmailChange = (text: string) => {
-    const value = text
-      .replace(/\s/g, "")
-      .toLowerCase();
+    const value = text.replace(/\s/g, "").toLowerCase();
 
     setEmail(value);
 
@@ -132,7 +205,7 @@ export default function CadastroScreen({ navigation }: any) {
     } else {
       value = `(${value.substring(0, 2)}) ${value.substring(
         2,
-        7
+        7,
       )}-${value.substring(7)}`;
     }
 
@@ -152,6 +225,31 @@ export default function CadastroScreen({ navigation }: any) {
 
     if (passwordError) {
       setPasswordError("");
+    }
+
+    if (confirmPassword && text !== confirmPassword) {
+      setConfirmPasswordError("As senhas não coincidem.");
+    } else if (confirmPassword && text === confirmPassword) {
+      setConfirmPasswordError("");
+    }
+  };
+
+  // =====================================================
+  // ALTERAÇÃO DA CONFIRMAÇÃO DA SENHA
+  // =====================================================
+
+  const handleConfirmPasswordChange = (text: string) => {
+    setConfirmPassword(text);
+
+    if (!text) {
+      setConfirmPasswordError("");
+      return;
+    }
+
+    if (text !== password) {
+      setConfirmPasswordError("As senhas não coincidem.");
+    } else {
+      setConfirmPasswordError("");
     }
   };
 
@@ -184,8 +282,7 @@ export default function CadastroScreen({ navigation }: any) {
       return false;
     }
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
       setEmailError("Digite um e-mail válido.");
@@ -208,10 +305,7 @@ export default function CadastroScreen({ navigation }: any) {
 
     const numbersOnly = phone.replace(/\D/g, "");
 
-    if (
-      numbersOnly.length !== 10 &&
-      numbersOnly.length !== 11
-    ) {
+    if (numbersOnly.length !== 10 && numbersOnly.length !== 11) {
       setPhoneError("Digite um celular válido.");
       return false;
     }
@@ -231,30 +325,22 @@ export default function CadastroScreen({ navigation }: any) {
     }
 
     if (!hasEightCharacters) {
-      setPasswordError(
-        "A senha deve ter pelo menos 8 caracteres."
-      );
+      setPasswordError("A senha deve ter pelo menos 8 caracteres.");
       return false;
     }
 
-    if (!hasLetter) {
-      setPasswordError(
-        "A senha deve conter pelo menos uma letra."
-      );
+    if (!hasUppercase) {
+      setPasswordError("A senha deve conter pelo menos uma letra maiúscula.");
       return false;
     }
 
     if (!hasNumber) {
-      setPasswordError(
-        "A senha deve conter pelo menos um número."
-      );
+      setPasswordError("A senha deve conter pelo menos um número.");
       return false;
     }
 
     if (!hasSymbol) {
-      setPasswordError(
-        "A senha deve conter pelo menos um símbolo."
-      );
+      setPasswordError("A senha deve conter pelo menos um símbolo.");
       return false;
     }
 
@@ -263,61 +349,124 @@ export default function CadastroScreen({ navigation }: any) {
   };
 
   // =====================================================
+  // VALIDAÇÃO DA CONFIRMAÇÃO
+  // =====================================================
+
+  const validateConfirmPassword = () => {
+    if (!confirmPassword) {
+      setConfirmPasswordError("Confirme sua senha.");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setConfirmPasswordError("As senhas não coincidem.");
+      return false;
+    }
+
+    setConfirmPasswordError("");
+    return true;
+  };
+
+  // =====================================================
   // CADASTRAR USUÁRIO
   // =====================================================
 
   const cadastrarUsuario = async () => {
-    // Executa todas as validações
     const nameIsValid = validateName();
     const emailIsValid = validateEmail();
     const phoneIsValid = validatePhone();
     const passwordIsValid = validatePassword();
+    const confirmPasswordIsValid = validateConfirmPassword();
 
-    // Se alguma validação falhar, não cadastra
+    // ===================================================
+    // VALIDAÇÕES
+    // ===================================================
+
     if (
       !nameIsValid ||
       !emailIsValid ||
       !phoneIsValid ||
-      !passwordIsValid
+      !passwordIsValid ||
+      !confirmPasswordIsValid
     ) {
-      Alert.alert(
+      showModal(
+        "warning",
         "Atenção",
-        "Por favor, verifique os dados informados."
+        "Por favor, verifique os dados informados.",
       );
 
       return;
     }
 
+    // ===================================================
+    // CADASTRO NO FIREBASE
+    // ===================================================
+
     try {
-      // Chama o serviço responsável pelo cadastro
       await userService.cadastrarUsuario(
         name.trim(),
         phone.trim(),
         email.trim(),
-        password
+        password,
       );
 
-      // Cadastro realizado com sucesso
-      Alert.alert(
-        "Cadastro realizado",
-        "Sua conta foi criada com sucesso!",
-        [
-          {
-            text: "Continuar",
-            onPress: () => navigation.navigate("Login"),
-          },
-        ]
+      // =================================================
+      // SUCESSO
+      // =================================================
+
+      showModal(
+        "success",
+        "Cadastro realizado!",
+        "Sua conta foi criada com sucesso.",
       );
     } catch (error) {
-      console.error(
-        "Erro ao cadastrar usuário:",
-        error
-      );
+      console.error("Erro ao cadastrar usuário:", error);
 
-      Alert.alert(
-        "Erro",
-        "Não foi possível realizar o cadastro. Tente novamente."
-      );
+      showModal("error", "Erro no cadastro", "Usuario ja cadastrado.");
+    }
+  };
+
+  // =====================================================
+  // ÍCONE DO MODAL
+  // =====================================================
+
+  const getModalIcon = () => {
+    if (modalType === "success") {
+      return "✓";
+    }
+
+    if (modalType === "warning") {
+      return "!";
+    }
+
+    return "×";
+  };
+
+  // =====================================================
+  // COR DO MODAL
+  // =====================================================
+
+  const getModalColor = () => {
+    if (modalType === "success") {
+      return "#43A047";
+    }
+
+    if (modalType === "warning") {
+      return "#F58427";
+    }
+
+    return "#E05A47";
+  };
+
+  // =====================================================
+  // AÇÃO DO BOTÃO DO MODAL
+  // =====================================================
+
+  const handleModalButton = () => {
+    setModalVisible(false);
+
+    if (modalType === "success") {
+      navigation.navigate("Login");
     }
   };
 
@@ -327,7 +476,6 @@ export default function CadastroScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-
       {/* =================================================
           DETALHE LARANJA SUPERIOR
           ================================================= */}
@@ -340,19 +488,13 @@ export default function CadastroScreen({ navigation }: any) {
 
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-
           {/* =================================================
               CONTEÚDO
               ================================================= */}
@@ -370,7 +512,6 @@ export default function CadastroScreen({ navigation }: any) {
               },
             ]}
           >
-
             {/* =================================================
                 LOGO
                 ================================================= */}
@@ -384,23 +525,17 @@ export default function CadastroScreen({ navigation }: any) {
                 ],
               }}
             >
-
               <Image
-                source={require(
-                  "../../assets/imagens/zappyfood_logo.png"
-                )}
+                source={require("../../assets/imagens/zappyfood_logo.png")}
                 style={styles.logo}
               />
-
             </Animated.View>
 
             {/* =================================================
                 TÍTULO
                 ================================================= */}
 
-            <Text style={styles.title}>
-              Crie sua conta
-            </Text>
+            <Text style={styles.title}>Crie sua conta</Text>
 
             <Text style={styles.subtitle}>
               Cadastre-se para começar a usar o Zappy Food.
@@ -411,22 +546,15 @@ export default function CadastroScreen({ navigation }: any) {
                 ================================================= */}
 
             <View style={styles.form}>
-
               {/* =================================================
                   NOME
                   ================================================= */}
 
               <View style={styles.inputContainer}>
-
-                <Text style={styles.label}>
-                  NOME
-                </Text>
+                <Text style={styles.label}>NOME</Text>
 
                 <TextInput
-                  style={[
-                    styles.input,
-                    nameError && styles.inputError,
-                  ]}
+                  style={[styles.input, nameError && styles.inputError]}
                   placeholder="Digite seu nome"
                   placeholderTextColor="#666666"
                   autoCapitalize="words"
@@ -436,11 +564,8 @@ export default function CadastroScreen({ navigation }: any) {
                 />
 
                 {nameError !== "" && (
-                  <Text style={styles.errorText}>
-                    {nameError}
-                  </Text>
+                  <Text style={styles.errorText}>{nameError}</Text>
                 )}
-
               </View>
 
               {/* =================================================
@@ -448,16 +573,10 @@ export default function CadastroScreen({ navigation }: any) {
                   ================================================= */}
 
               <View style={styles.inputContainer}>
-
-                <Text style={styles.label}>
-                  E-MAIL
-                </Text>
+                <Text style={styles.label}>E-MAIL</Text>
 
                 <TextInput
-                  style={[
-                    styles.input,
-                    emailError && styles.inputError,
-                  ]}
+                  style={[styles.input, emailError && styles.inputError]}
                   placeholder="Digite seu e-mail"
                   placeholderTextColor="#666666"
                   keyboardType="email-address"
@@ -469,11 +588,8 @@ export default function CadastroScreen({ navigation }: any) {
                 />
 
                 {emailError !== "" && (
-                  <Text style={styles.errorText}>
-                    {emailError}
-                  </Text>
+                  <Text style={styles.errorText}>{emailError}</Text>
                 )}
-
               </View>
 
               {/* =================================================
@@ -481,16 +597,10 @@ export default function CadastroScreen({ navigation }: any) {
                   ================================================= */}
 
               <View style={styles.inputContainer}>
-
-                <Text style={styles.label}>
-                  CELULAR
-                </Text>
+                <Text style={styles.label}>CELULAR</Text>
 
                 <TextInput
-                  style={[
-                    styles.input,
-                    phoneError && styles.inputError,
-                  ]}
+                  style={[styles.input, phoneError && styles.inputError]}
                   placeholder="(00) 00000-0000"
                   placeholderTextColor="#666666"
                   keyboardType="phone-pad"
@@ -500,11 +610,8 @@ export default function CadastroScreen({ navigation }: any) {
                 />
 
                 {phoneError !== "" && (
-                  <Text style={styles.errorText}>
-                    {phoneError}
-                  </Text>
+                  <Text style={styles.errorText}>{phoneError}</Text>
                 )}
-
               </View>
 
               {/* =================================================
@@ -512,19 +619,14 @@ export default function CadastroScreen({ navigation }: any) {
                   ================================================= */}
 
               <View style={styles.inputContainer}>
-
-                <Text style={styles.label}>
-                  SENHA
-                </Text>
+                <Text style={styles.label}>SENHA</Text>
 
                 <View
                   style={[
                     styles.passwordContainer,
-                    passwordError &&
-                      styles.passwordContainerError,
+                    passwordError && styles.passwordContainerError,
                   ]}
                 >
-
                   <TextInput
                     style={styles.passwordInput}
                     placeholder="Crie uma senha"
@@ -538,74 +640,96 @@ export default function CadastroScreen({ navigation }: any) {
 
                   <Pressable
                     style={styles.showPasswordButton}
-                    onPress={() =>
-                      setShowPassword(!showPassword)
-                    }
+                    onPress={() => setShowPassword(!showPassword)}
                   >
-
                     <Text style={styles.showPasswordText}>
                       {showPassword ? "OCULTAR" : "VER"}
                     </Text>
-
                   </Pressable>
-
                 </View>
 
                 {/* =================================================
-                    REGRAS DA SENHA
+                    BARRA DE FORÇA DA SENHA
                     ================================================= */}
 
-                <View style={styles.passwordRules}>
+                {password !== "" && (
+                  <View style={styles.passwordStrengthContainer}>
+                    <View style={styles.passwordBarBackground}>
+                      <View
+                        style={[
+                          styles.passwordBar,
+                          {
+                            width: passwordStrength.width,
+                            backgroundColor: passwordStrength.color,
+                          },
+                        ]}
+                      />
+                    </View>
 
-                  <Text
-                    style={[
-                      styles.rule,
-                      hasEightCharacters &&
-                        styles.ruleValid,
-                    ]}
-                  >
-                    {hasEightCharacters ? "✓" : "○"}{" "}
-                    Mínimo de 8 caracteres
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.rule,
-                      hasLetter && styles.ruleValid,
-                    ]}
-                  >
-                    {hasLetter ? "✓" : "○"}{" "}
-                    Pelo menos uma letra
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.rule,
-                      hasNumber && styles.ruleValid,
-                    ]}
-                  >
-                    {hasNumber ? "✓" : "○"}{" "}
-                    Pelo menos um número
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.rule,
-                      hasSymbol && styles.ruleValid,
-                    ]}
-                  >
-                    {hasSymbol ? "✓" : "○"}{" "}
-                    Pelo menos um símbolo
-                  </Text>
-
-                </View>
-
-                {passwordError !== "" && (
-                  <Text style={styles.errorText}>
-                    {passwordError}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.passwordStrengthText,
+                        {
+                          color: passwordStrength.color,
+                        },
+                      ]}
+                    >
+                      {passwordStrength.text}
+                    </Text>
+                  </View>
                 )}
 
+                {passwordError !== "" && (
+                  <Text style={styles.errorText}>{passwordError}</Text>
+                )}
+              </View>
+
+              {/* =================================================
+                  CONFIRMAR SENHA
+                  ================================================= */}
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>CONFIRMAR SENHA</Text>
+
+                <View
+                  style={[
+                    styles.passwordContainer,
+
+                    confirmPasswordError && styles.passwordContainerError,
+
+                    confirmPassword &&
+                      !confirmPasswordError &&
+                      styles.passwordContainerSuccess,
+                  ]}
+                >
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Digite sua senha novamente"
+                    placeholderTextColor="#666666"
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={confirmPassword}
+                    onChangeText={handleConfirmPasswordChange}
+                  />
+
+                  <Pressable
+                    style={styles.showPasswordButton}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <Text style={styles.showPasswordText}>
+                      {showConfirmPassword ? "OCULTAR" : "VER"}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {confirmPassword && !confirmPasswordError && (
+                  <Text style={styles.passwordMatch}>✓ Senhas iguais</Text>
+                )}
+
+                {confirmPasswordError !== "" && (
+                  <Text style={styles.errorText}>{confirmPasswordError}</Text>
+                )}
               </View>
 
               {/* =================================================
@@ -615,16 +739,11 @@ export default function CadastroScreen({ navigation }: any) {
               <Pressable
                 style={({ pressed }) => [
                   styles.registerButton,
-                  pressed &&
-                    styles.registerButtonPressed,
+                  pressed && styles.registerButtonPressed,
                 ]}
                 onPress={cadastrarUsuario}
               >
-
-                <Text style={styles.registerButtonText}>
-                  CRIAR CONTA
-                </Text>
-
+                <Text style={styles.registerButtonText}>CRIAR CONTA</Text>
               </Pressable>
 
               {/* =================================================
@@ -632,15 +751,11 @@ export default function CadastroScreen({ navigation }: any) {
                   ================================================= */}
 
               <View style={styles.separatorContainer}>
-
                 <View style={styles.separatorLine} />
 
-                <Text style={styles.separatorText}>
-                  ou
-                </Text>
+                <Text style={styles.separatorText}>ou</Text>
 
                 <View style={styles.separatorLine} />
-
               </View>
 
               {/* =================================================
@@ -648,41 +763,85 @@ export default function CadastroScreen({ navigation }: any) {
                   ================================================= */}
 
               <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Já possui uma conta?</Text>
 
-                <Text style={styles.loginText}>
-                  Já possui uma conta?
-                </Text>
-
-                <Pressable
-                  onPress={() =>
-                    navigation.navigate("Login")
-                  }
-                >
-
-                  <Text style={styles.loginLink}>
-                    Entrar
-                  </Text>
-
+                <Pressable onPress={() => navigation.navigate("Login")}>
+                  <Text style={styles.loginLink}>Entrar</Text>
                 </Pressable>
-
               </View>
-
             </View>
-
           </Animated.View>
-
         </ScrollView>
-
       </KeyboardAvoidingView>
 
       {/* =================================================
           RODAPÉ
           ================================================= */}
 
-      <Text style={styles.footer}>
-        ZAPPY FOOD
-      </Text>
+      <Text style={styles.footer}>ZAPPY FOOD</Text>
 
+      {/* =================================================
+          MODAL
+          ================================================= */}
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            {/* =================================================
+                ÍCONE
+                ================================================= */}
+
+            <View
+              style={[
+                styles.modalIcon,
+                {
+                  backgroundColor: getModalColor(),
+                },
+              ]}
+            >
+              <Text style={styles.modalIconText}>{getModalIcon()}</Text>
+            </View>
+
+            {/* =================================================
+                TÍTULO
+                ================================================= */}
+
+            <Text style={styles.modalTitle}>{modalTitle}</Text>
+
+            {/* =================================================
+                MENSAGEM
+                ================================================= */}
+
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+
+            {/* =================================================
+                BOTÃO
+                ================================================= */}
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.modalButton,
+                {
+                  backgroundColor: getModalColor(),
+                },
+                pressed && styles.modalButtonPressed,
+              ]}
+              onPress={handleModalButton}
+            >
+              <Text style={styles.modalButtonText}>
+                {modalType === "success" ? "CONTINUAR" : "ENTENDI"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -692,7 +851,6 @@ export default function CadastroScreen({ navigation }: any) {
 // =====================================================
 
 const styles = StyleSheet.create({
-
   // ===================================================
   // FUNDO
   // ===================================================
@@ -852,6 +1010,10 @@ const styles = StyleSheet.create({
     borderColor: "#E05A47",
   },
 
+  passwordContainerSuccess: {
+    borderColor: "#43A047",
+  },
+
   passwordInput: {
     flex: 1,
     height: "100%",
@@ -873,22 +1035,40 @@ const styles = StyleSheet.create({
   },
 
   // ===================================================
-  // REGRAS DA SENHA
+  // BARRA DE FORÇA DA SENHA
   // ===================================================
 
-  passwordRules: {
+  passwordStrengthContainer: {
     marginTop: 8,
-    marginLeft: 3,
   },
 
-  rule: {
+  passwordBarBackground: {
+    width: "100%",
+    height: 5,
+    backgroundColor: "#292929",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+
+  passwordBar: {
+    height: "100%",
+    borderRadius: 10,
+  },
+
+  passwordStrengthText: {
+    marginTop: 5,
     fontSize: 10,
-    color: "#555555",
-    marginBottom: 3,
+    fontWeight: "700",
   },
 
-  ruleValid: {
-    color: "#F58427",
+  // ===================================================
+  // CONFIRMAÇÃO DA SENHA
+  // ===================================================
+
+  passwordMatch: {
+    marginTop: 5,
+    fontSize: 10,
+    color: "#43A047",
     fontWeight: "700",
   },
 
@@ -905,21 +1085,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
 
     shadowColor: "#F58427",
-
     shadowOffset: {
       width: 0,
       height: 5,
     },
-
     shadowOpacity: 0.22,
     shadowRadius: 8,
-
     elevation: 5,
   },
 
   registerButtonPressed: {
     opacity: 0.75,
-
     transform: [
       {
         scale: 0.98,
@@ -993,4 +1169,113 @@ const styles = StyleSheet.create({
     color: "#444444",
   },
 
+  // ===================================================
+  // MODAL — FUNDO
+  // ===================================================
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.78)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 28,
+  },
+
+  // ===================================================
+  // MODAL — CARD
+  // ===================================================
+
+  modalCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#181818",
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: "center",
+
+    borderWidth: 1,
+    borderColor: "#333333",
+
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+
+  // ===================================================
+  // MODAL — ÍCONE
+  // ===================================================
+
+  modalIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
+  modalIconText: {
+    color: "#FFFFFF",
+    fontSize: 34,
+    fontWeight: "900",
+    lineHeight: 40,
+  },
+
+  // ===================================================
+  // MODAL — TÍTULO
+  // ===================================================
+
+  modalTitle: {
+    color: "#FFFFFF",
+    fontSize: 21,
+    fontWeight: "900",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+
+  // ===================================================
+  // MODAL — MENSAGEM
+  // ===================================================
+
+  modalMessage: {
+    color: "#999999",
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+
+  // ===================================================
+  // MODAL — BOTÃO
+  // ===================================================
+
+  modalButton: {
+    width: "100%",
+    height: 48,
+    borderRadius: 11,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalButtonPressed: {
+    opacity: 0.75,
+    transform: [
+      {
+        scale: 0.98,
+      },
+    ],
+  },
+
+  modalButtonText: {
+    color: "#111111",
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
 });
