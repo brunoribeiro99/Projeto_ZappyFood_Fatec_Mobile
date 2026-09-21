@@ -18,7 +18,13 @@ import {
 
 import { userService } from "./services/userService";
 
-export default function CadastroScreen({ navigation }: any) {
+export default function CadastroScreen({ navigation, route }: any) {
+  // =====================================================
+  // TIPO DE CADASTRO (VEM DA TELA DE LOGIN)
+  // =====================================================
+
+  const isCompany = route?.params?.accountType === "company";
+
   // =====================================================
   // ESTADOS
   // =====================================================
@@ -29,11 +35,19 @@ export default function CadastroScreen({ navigation }: any) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Somente restaurante
+  const [restaurantName, setRestaurantName] = useState("");
+  const [cnpj, setCnpj] = useState("");
+
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  // Somente restaurante
+  const [restaurantNameError, setRestaurantNameError] = useState("");
+  const [cnpjError, setCnpjError] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -174,6 +188,56 @@ export default function CadastroScreen({ navigation }: any) {
   };
 
   // =====================================================
+  // ALTERAÇÃO DO NOME DO RESTAURANTE
+  // =====================================================
+
+  const handleRestaurantNameChange = (text: string) => {
+    setRestaurantName(text);
+
+    if (restaurantNameError) {
+      setRestaurantNameError("");
+    }
+  };
+
+  // =====================================================
+  // MÁSCARA DO CNPJ
+  // =====================================================
+
+  const handleCnpjChange = (text: string) => {
+    const digits = text.replace(/\D/g, "").substring(0, 14);
+
+    let value = digits;
+
+    if (digits.length > 12) {
+      value = `${digits.substring(0, 2)}.${digits.substring(
+        2,
+        5,
+      )}.${digits.substring(5, 8)}/${digits.substring(
+        8,
+        12,
+      )}-${digits.substring(12)}`;
+    } else if (digits.length > 8) {
+      value = `${digits.substring(0, 2)}.${digits.substring(
+        2,
+        5,
+      )}.${digits.substring(5, 8)}/${digits.substring(8)}`;
+    } else if (digits.length > 5) {
+      value = `${digits.substring(0, 2)}.${digits.substring(
+        2,
+        5,
+      )}.${digits.substring(5)}`;
+    } else if (digits.length > 2) {
+      value = `${digits.substring(0, 2)}.${digits.substring(2)}`;
+    }
+
+    setCnpj(value);
+
+    if (cnpjError) {
+      setCnpjError("");
+    }
+  };
+
+  // =====================================================
   // ALTERAÇÃO DO E-MAIL
   // =====================================================
 
@@ -259,16 +323,62 @@ export default function CadastroScreen({ navigation }: any) {
 
   const validateName = () => {
     if (!name.trim()) {
-      setNameError("Informe seu nome.");
+      setNameError(
+        isCompany ? "Informe o nome do responsável." : "Informe seu nome.",
+      );
       return false;
     }
 
     if (name.trim().length < 3) {
-      setNameError("Digite seu nome completo.");
+      setNameError(
+        isCompany
+          ? "Digite o nome completo do responsável."
+          : "Digite seu nome completo.",
+      );
       return false;
     }
 
     setNameError("");
+    return true;
+  };
+
+  // =====================================================
+  // VALIDAÇÃO DO NOME DO RESTAURANTE
+  // =====================================================
+
+  const validateRestaurantName = () => {
+    if (!restaurantName.trim()) {
+      setRestaurantNameError("Informe o nome do restaurante.");
+      return false;
+    }
+
+    if (restaurantName.trim().length < 2) {
+      setRestaurantNameError("Digite o nome do restaurante.");
+      return false;
+    }
+
+    setRestaurantNameError("");
+    return true;
+  };
+
+  // =====================================================
+  // VALIDAÇÃO DO CNPJ
+  // =====================================================
+
+  const validateCnpj = () => {
+    const numbersOnly = cnpj.replace(/\D/g, "");
+
+    if (!numbersOnly) {
+      setCnpjError("Informe o CNPJ.");
+      return false;
+    }
+
+    if (numbersOnly.length !== 14) {
+      setCnpjError("O CNPJ deve ter 14 números.");
+      return false;
+    }
+
+    setCnpjError("");
     return true;
   };
 
@@ -368,11 +478,13 @@ export default function CadastroScreen({ navigation }: any) {
   };
 
   // =====================================================
-  // CADASTRAR USUÁRIO
+  // CADASTRAR (CLIENTE OU RESTAURANTE)
   // =====================================================
 
   const cadastrarUsuario = async () => {
     const nameIsValid = validateName();
+    const restaurantNameIsValid = isCompany ? validateRestaurantName() : true;
+    const cnpjIsValid = isCompany ? validateCnpj() : true;
     const emailIsValid = validateEmail();
     const phoneIsValid = validatePhone();
     const passwordIsValid = validatePassword();
@@ -384,6 +496,8 @@ export default function CadastroScreen({ navigation }: any) {
 
     if (
       !nameIsValid ||
+      !restaurantNameIsValid ||
+      !cnpjIsValid ||
       !emailIsValid ||
       !phoneIsValid ||
       !passwordIsValid ||
@@ -403,12 +517,23 @@ export default function CadastroScreen({ navigation }: any) {
     // ===================================================
 
     try {
-      await userService.cadastrarUsuario(
-        name.trim(),
-        phone.trim(),
-        email.trim(),
-        password,
-      );
+      if (isCompany) {
+        await userService.cadastrarRestaurante(
+          restaurantName.trim(),
+          name.trim(),
+          cnpj.replace(/\D/g, ""),
+          phone.trim(),
+          email.trim(),
+          password,
+        );
+      } else {
+        await userService.cadastrarUsuario(
+          name.trim(),
+          phone.trim(),
+          email.trim(),
+          password,
+        );
+      }
 
       // =================================================
       // SUCESSO
@@ -417,12 +542,23 @@ export default function CadastroScreen({ navigation }: any) {
       showModal(
         "success",
         "Cadastro realizado!",
-        "Sua conta foi criada com sucesso.",
+        isCompany
+          ? "A conta do seu restaurante foi criada com sucesso."
+          : "Sua conta foi criada com sucesso.",
       );
-    } catch (error) {
-      console.error("Erro ao cadastrar usuário:", error);
+    } catch (error: any) {
+      console.error("Erro ao cadastrar:", error);
 
-      showModal("error", "Erro no cadastro", "Usuario ja cadastrado.");
+      if (error?.code === "auth/email-already-in-use") {
+        showModal("error", "Erro no cadastro", "Usuario ja cadastrado.");
+        return;
+      }
+
+      showModal(
+        "error",
+        "Erro no cadastro",
+        "Não foi possível concluir o cadastro. Tente novamente.",
+      );
     }
   };
 
@@ -535,10 +671,14 @@ export default function CadastroScreen({ navigation }: any) {
                 TÍTULO
                 ================================================= */}
 
-            <Text style={styles.title}>Crie sua conta</Text>
+            <Text style={styles.title}>
+              {isCompany ? "Cadastre seu restaurante" : "Crie sua conta"}
+            </Text>
 
             <Text style={styles.subtitle}>
-              Cadastre-se para começar a usar o Zappy Food.
+              {isCompany
+                ? "Crie a conta do seu restaurante no Zappy Food."
+                : "Cadastre-se para começar a usar o Zappy Food."}
             </Text>
 
             {/* =================================================
@@ -547,15 +687,48 @@ export default function CadastroScreen({ navigation }: any) {
 
             <View style={styles.form}>
               {/* =================================================
+                  NOME DO RESTAURANTE (SOMENTE RESTAURANTE)
+                  ================================================= */}
+
+              {isCompany && (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>NOME DO RESTAURANTE</Text>
+
+                  <TextInput
+                    style={[
+                      styles.input,
+                      restaurantNameError && styles.inputError,
+                    ]}
+                    placeholder="Digite o nome do restaurante"
+                    placeholderTextColor="#666666"
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    value={restaurantName}
+                    onChangeText={handleRestaurantNameChange}
+                  />
+
+                  {restaurantNameError !== "" && (
+                    <Text style={styles.errorText}>{restaurantNameError}</Text>
+                  )}
+                </View>
+              )}
+
+              {/* =================================================
                   NOME
                   ================================================= */}
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>NOME</Text>
+                <Text style={styles.label}>
+                  {isCompany ? "NOME DO RESPONSÁVEL" : "NOME"}
+                </Text>
 
                 <TextInput
                   style={[styles.input, nameError && styles.inputError]}
-                  placeholder="Digite seu nome"
+                  placeholder={
+                    isCompany
+                      ? "Digite o nome do responsável"
+                      : "Digite seu nome"
+                  }
                   placeholderTextColor="#666666"
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -567,6 +740,30 @@ export default function CadastroScreen({ navigation }: any) {
                   <Text style={styles.errorText}>{nameError}</Text>
                 )}
               </View>
+
+              {/* =================================================
+                  CNPJ (SOMENTE RESTAURANTE)
+                  ================================================= */}
+
+              {isCompany && (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>CNPJ</Text>
+
+                  <TextInput
+                    style={[styles.input, cnpjError && styles.inputError]}
+                    placeholder="00.000.000/0000-00"
+                    placeholderTextColor="#666666"
+                    keyboardType="number-pad"
+                    value={cnpj}
+                    onChangeText={handleCnpjChange}
+                    maxLength={18}
+                  />
+
+                  {cnpjError !== "" && (
+                    <Text style={styles.errorText}>{cnpjError}</Text>
+                  )}
+                </View>
+              )}
 
               {/* =================================================
                   E-MAIL
@@ -743,7 +940,9 @@ export default function CadastroScreen({ navigation }: any) {
                 ]}
                 onPress={cadastrarUsuario}
               >
-                <Text style={styles.registerButtonText}>CRIAR CONTA</Text>
+                <Text style={styles.registerButtonText}>
+                  {isCompany ? "CADASTRAR RESTAURANTE" : "CRIAR CONTA"}
+                </Text>
               </Pressable>
 
               {/* =================================================

@@ -1,4 +1,5 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { get, ref } from "firebase/database";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -14,7 +15,9 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { auth } from "./services/firebaseConfig";
+import { auth, database as db } from "./services/firebaseConfig";
+
+type AccountType = "client" | "company";
 
 export default function LoginScreen({ navigation }: any) {
   // =====================================================
@@ -28,6 +31,14 @@ export default function LoginScreen({ navigation }: any) {
   const [passwordError, setPasswordError] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
+
+  // =====================================================
+  // TIPO DE ACESSO (CLIENTE OU RESTAURANTE)
+  // =====================================================
+
+  const [accountType, setAccountType] = useState<AccountType>("client");
+
+  const isCompany = accountType === "company";
 
   // =====================================================
   // ESTADOS DO MODAL
@@ -182,9 +193,46 @@ export default function LoginScreen({ navigation }: any) {
 
       console.log("Login realizado:", userCredential.user.uid);
 
+      // =====================================================
+      // CONFERÊNCIA DO TIPO DE CONTA (REALTIME DATABASE)
+      // =====================================================
+
+      const uid = userCredential.user.uid;
+
+      const [clientSnap, companySnap] = await Promise.all([
+        get(ref(db, `clientes/${uid}`)),
+        get(ref(db, `restaurantes/${uid}`)),
+      ]);
+
+      const savedType: AccountType | null = companySnap.exists()
+        ? "company"
+        : clientSnap.exists()
+          ? "client"
+          : null;
+
+      if (savedType && savedType !== accountType) {
+        await signOut(auth);
+        showModal(
+          "warning",
+          "Tipo de conta diferente",
+          savedType === "company"
+            ? 'Essa conta é de restaurante. Escolha "Restaurante" para entrar.'
+            : 'Essa conta é de cliente. Escolha "Cliente" para entrar.',
+        );
+        return;
+      }
+
+      // =====================================================
+      // REDIRECIONAMENTO PARA O DASHBOARD CORRETO
+      // =====================================================
+
       navigation.reset({
         index: 0,
-        routes: [{ name: "Dashboard" }],
+        routes: [
+          {
+            name: isCompany ? "DashboardRestaurante" : "DashboardCliente",
+          },
+        ],
       });
     } catch (error: any) {
       console.log("Erro no login Firebase:", error);
@@ -294,7 +342,6 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {" "}
       <View style={styles.topAccent} />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
@@ -344,8 +391,96 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.title}>Bem-vindo de volta!</Text>
 
             <Text style={styles.subtitle}>
-              Entre na sua conta para continuar.
+              {isCompany
+                ? "Acesse o painel do seu restaurante."
+                : "Entre na sua conta para continuar."}
             </Text>
+
+            {/* =================================================
+            SELETOR: CLIENTE OU RESTAURANTE
+            ================================================= */}
+
+            <View style={styles.selectorWrapper}>
+              <Text style={styles.label}>ENTRAR COMO</Text>
+
+              <View style={styles.selectorRow}>
+                {/* CLIENTE */}
+                <Pressable
+                  onPress={() => setAccountType("client")}
+                  style={({ pressed }) => [
+                    styles.typeCard,
+                    !isCompany && styles.typeCardSelected,
+                    pressed && styles.typeCardPressed,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.typeIconCircle,
+                      !isCompany && styles.typeIconCircleSelected,
+                    ]}
+                  >
+                    <Text style={styles.typeIcon}>🍽️</Text>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.typeTitle,
+                      !isCompany && styles.typeTitleSelected,
+                    ]}
+                  >
+                    CLIENTE
+                  </Text>
+
+                  <Text style={styles.typeDescription}>
+                    Reserve mesas e faça pedidos
+                  </Text>
+
+                  {!isCompany && (
+                    <View style={styles.typeCheck}>
+                      <Text style={styles.typeCheckText}>✓</Text>
+                    </View>
+                  )}
+                </Pressable>
+
+                {/* RESTAURANTE */}
+                <Pressable
+                  onPress={() => setAccountType("company")}
+                  style={({ pressed }) => [
+                    styles.typeCard,
+                    isCompany && styles.typeCardSelected,
+                    pressed && styles.typeCardPressed,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.typeIconCircle,
+                      isCompany && styles.typeIconCircleSelected,
+                    ]}
+                  >
+                    <Text style={styles.typeIcon}>🏪</Text>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.typeTitle,
+                      isCompany && styles.typeTitleSelected,
+                    ]}
+                  >
+                    RESTAURANTE
+                  </Text>
+
+                  <Text style={styles.typeDescription}>
+                    Gerencie pedidos e o salão
+                  </Text>
+
+                  {isCompany && (
+                    <View style={styles.typeCheck}>
+                      <Text style={styles.typeCheckText}>✓</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
+            </View>
 
             {/* =================================================
             FORMULÁRIO
@@ -437,7 +572,11 @@ export default function LoginScreen({ navigation }: any) {
                 ]}
                 onPress={handleLogin}
               >
-                <Text style={styles.loginButtonText}>ENTRAR</Text>
+                <Text style={styles.loginButtonText}>
+                  {isCompany
+                    ? "ENTRAR COMO RESTAURANTE"
+                    : "ENTRAR COMO CLIENTE"}
+                </Text>
               </Pressable>
 
               {/* =================================================
@@ -459,7 +598,11 @@ export default function LoginScreen({ navigation }: any) {
               <View style={styles.registerContainer}>
                 <Text style={styles.registerText}>Não tem uma conta?</Text>
 
-                <Pressable onPress={() => navigation.navigate("Register")}>
+                <Pressable
+                  onPress={() =>
+                    navigation.navigate("Register", { accountType })
+                  }
+                >
                   <Text style={styles.registerLink}>Cadastre-se</Text>
                 </Pressable>
               </View>
@@ -473,6 +616,7 @@ export default function LoginScreen({ navigation }: any) {
           <Text style={styles.footer}>ZAPPY FOOD</Text>
         </ScrollView>
       </KeyboardAvoidingView>
+
       {/* =====================================================
       MODAL
       ===================================================== */}
@@ -529,37 +673,21 @@ export default function LoginScreen({ navigation }: any) {
 // =====================================================
 
 const styles = StyleSheet.create({
-  // ===================================================
-  // FUNDO
-  // ===================================================
-
   container: {
     flex: 1,
     backgroundColor: "#111111",
     alignItems: "center",
   },
 
-  // ===================================================
-  // CONTROLE DO TECLADO
-  // ===================================================
-
   keyboardContainer: {
     flex: 1,
     width: "100%",
   },
 
-  // ===================================================
-  // SCROLL
-  // ===================================================
-
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 28,
   },
-
-  // ===================================================
-  // DETALHE SUPERIOR
-  // ===================================================
 
   topAccent: {
     position: "absolute",
@@ -571,10 +699,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  // ===================================================
-  // CONTEÚDO
-  // ===================================================
-
   content: {
     width: "100%",
     maxWidth: 380,
@@ -583,19 +707,11 @@ const styles = StyleSheet.create({
     marginTop: 55,
   },
 
-  // ===================================================
-  // LOGO
-  // ===================================================
-
   logo: {
     width: 105,
     height: 105,
     resizeMode: "contain",
   },
-
-  // ===================================================
-  // TÍTULO
-  // ===================================================
 
   title: {
     marginTop: 12,
@@ -605,10 +721,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
 
-  // ===================================================
-  // SUBTÍTULO
-  // ===================================================
-
   subtitle: {
     marginTop: 7,
     fontSize: 13,
@@ -617,18 +729,102 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // ===================================================
-  // FORMULÁRIO
-  // ===================================================
+  selectorWrapper: {
+    width: "100%",
+    marginTop: 28,
+  },
+
+  selectorRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  typeCard: {
+    flex: 1,
+    minHeight: 138,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    backgroundColor: "#181818",
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  typeCardSelected: {
+    borderColor: "#F58427",
+    backgroundColor: "#1F1710",
+  },
+
+  typeCardPressed: {
+    opacity: 0.8,
+    transform: [
+      {
+        scale: 0.98,
+      },
+    ],
+  },
+
+  typeIconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#222222",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+
+  typeIconCircleSelected: {
+    backgroundColor: "#2B1D10",
+  },
+
+  typeIcon: {
+    fontSize: 22,
+  },
+
+  typeTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+    color: "#A7A7A7",
+  },
+
+  typeTitleSelected: {
+    color: "#FFFFFF",
+  },
+
+  typeDescription: {
+    marginTop: 5,
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: "center",
+    color: "#6E6E6E",
+  },
+
+  typeCheck: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#F58427",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  typeCheckText: {
+    color: "#111111",
+    fontSize: 12,
+    fontWeight: "900",
+  },
 
   form: {
     width: "100%",
-    marginTop: 32,
+    marginTop: 24,
   },
-
-  // ===================================================
-  // INPUT
-  // ===================================================
 
   inputContainer: {
     marginBottom: 18,
@@ -666,10 +862,6 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
 
-  // ===================================================
-  // SENHA
-  // ===================================================
-
   passwordContainer: {
     width: "100%",
     height: 54,
@@ -705,10 +897,6 @@ const styles = StyleSheet.create({
     color: "#777777",
   },
 
-  // ===================================================
-  // ESQUECI SENHA
-  // ===================================================
-
   forgotButton: {
     alignSelf: "flex-end",
     marginTop: 2,
@@ -720,10 +908,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#F58427",
   },
-
-  // ===================================================
-  // BOTÃO ENTRAR
-  // ===================================================
 
   loginButton: {
     width: "100%",
@@ -753,14 +937,10 @@ const styles = StyleSheet.create({
 
   loginButtonText: {
     color: "#111111",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "900",
     letterSpacing: 1,
   },
-
-  // ===================================================
-  // SEPARADOR
-  // ===================================================
 
   separatorContainer: {
     width: "100%",
@@ -782,10 +962,6 @@ const styles = StyleSheet.create({
     color: "#555555",
   },
 
-  // ===================================================
-  // CADASTRO
-  // ===================================================
-
   registerContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -804,10 +980,6 @@ const styles = StyleSheet.create({
     color: "#F58427",
   },
 
-  // ===================================================
-  // RODAPÉ
-  // ===================================================
-
   footer: {
     marginTop: 35,
     marginBottom: 27,
@@ -817,10 +989,6 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     color: "#444444",
   },
-
-  // ===================================================
-  // MODAL
-  // ===================================================
 
   modalOverlay: {
     flex: 1,

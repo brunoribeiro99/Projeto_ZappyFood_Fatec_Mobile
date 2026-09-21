@@ -3,7 +3,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 //Importa todas a telas do app
-import DashboardScreen from "./src/screen/dashboard_screen";
+import DashboardScreenCliente from "./src/screen/dashboard_screen_cliente";
+import DashboardScreenRestaurante from "./src/screen/deshboard_screen_restaurante";
 import LoginScreen from "./src/screen/login_screen";
 import RegisterScreen from "./src/screen/register_screen";
 import SplashScreen from "./src/screen/splash_screen";
@@ -19,7 +20,8 @@ export default function App() {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        <Stack.Screen name="DashboardCliente" component={DashboardScreenCliente} />
+        <Stack.Screen name="DashboardRestaurante" component={DashboardScreenRestaurante} />
       </Stack.Navigator>
     </NavigationContainer>
   );
