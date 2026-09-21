@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  FlatList,
   Modal,
   Pressable,
   SafeAreaView,
@@ -11,16 +12,68 @@ import {
 
 type StatusRestaurante = "aberto" | "fechado" | null;
 
+// =====================================================
+// MESAS (SÓ PRA TESTE)
+// =====================================================
+
+const TOTAL_MESAS = 12;
+
+// =====================================================
+// PRATOS DO CARDÁPIO (SÓ PRA TESTE)
+// =====================================================
+
+interface Prato {
+  id: string;
+  nome: string;
+  descricao: string;
+  preco: string;
+}
+
+const PRATOS: Prato[] = [
+  {
+    id: "1",
+    nome: "Risoto de Camarão",
+    descricao: "Arroz arbóreo, camarões e toque de limão siciliano",
+    preco: "R$ 58,90",
+  },
+  {
+    id: "2",
+    nome: "Filé ao Molho Madeira",
+    descricao: "Filé mignon grelhado com molho madeira e batatas rústicas",
+    preco: "R$ 64,90",
+  },
+  {
+    id: "3",
+    nome: "Salada Caesar",
+    descricao: "Alface romana, croutons, parmesão e molho caesar",
+    preco: "R$ 32,00",
+  },
+  {
+    id: "4",
+    nome: "Massa ao Pesto",
+    descricao: "Talharine, manjericão fresco, pinoli e parmesão",
+    preco: "R$ 45,00",
+  },
+  {
+    id: "5",
+    nome: "Petit Gâteau",
+    descricao: "Bolo quente de chocolate com sorvete de creme",
+    preco: "R$ 24,00",
+  },
+];
+
 export default function RestaurantHome() {
   // =====================================================
   // ESTADOS
   // =====================================================
 
   const [status, setStatus] = useState<StatusRestaurante>(null);
-  const [mesasReservadas, setMesasReservadas] = useState(0);
+
+  const [mesas, setMesas] = useState<boolean[]>(Array(TOTAL_MESAS).fill(false));
 
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [mesasModalVisible, setMesasModalVisible] = useState(false);
+  const [menuModalVisible, setMenuModalVisible] = useState(false);
 
   // =====================================================
   // DEFINIR STATUS
@@ -32,15 +85,19 @@ export default function RestaurantHome() {
   };
 
   // =====================================================
-  // AJUSTAR MESAS RESERVADAS
+  // ALTERNAR MESA (RESERVADA / LIVRE)
   // =====================================================
 
-  const alterarMesas = (delta: number) => {
-    setMesasReservadas((atual) => Math.max(0, atual + delta));
+  const alternarMesa = (index: number) => {
+    setMesas((atual) =>
+      atual.map((reservada, i) => (i === index ? !reservada : reservada)),
+    );
   };
 
   const isAberto = status === "aberto";
   const isFechado = status === "fechado";
+
+  const mesasReservadas = mesas.filter(Boolean).length;
 
   // =====================================================
   // INTERFACE
@@ -99,7 +156,7 @@ export default function RestaurantHome() {
           </Text>
         </Pressable>
 
-        {/* BOTÃO: MESAS RESERVADAS */}
+        {/* BOTÃO: MESAS */}
 
         <Pressable
           style={({ pressed }) => [
@@ -112,12 +169,32 @@ export default function RestaurantHome() {
             <Text style={styles.bigButtonEmoji}>🪑</Text>
           </View>
 
-          <Text style={styles.bigButtonTitle}>MESAS RESERVADAS</Text>
+          <Text style={styles.bigButtonTitle}>MESAS</Text>
 
           <Text style={styles.bigButtonSubtitle}>
             {mesasReservadas === 0
-              ? "Nenhuma mesa reservada"
-              : `${mesasReservadas} ${mesasReservadas === 1 ? "mesa reservada" : "mesas reservadas"}`}
+              ? `Nenhuma mesa reservada de ${TOTAL_MESAS}`
+              : `${mesasReservadas} de ${TOTAL_MESAS} mesas reservadas`}
+          </Text>
+        </Pressable>
+
+        {/* BOTÃO: MENU */}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.bigButton,
+            pressed && styles.bigButtonPressed,
+          ]}
+          onPress={() => setMenuModalVisible(true)}
+        >
+          <View style={styles.bigButtonIcon}>
+            <Text style={styles.bigButtonEmoji}>📖</Text>
+          </View>
+
+          <Text style={styles.bigButtonTitle}>MENU</Text>
+
+          <Text style={styles.bigButtonSubtitle}>
+            {PRATOS.length} pratos no cardápio
           </Text>
         </Pressable>
       </View>
@@ -176,7 +253,7 @@ export default function RestaurantHome() {
       </Modal>
 
       {/* =====================================================
-      MODAL: MESAS RESERVADAS
+      MODAL: MESAS
       ===================================================== */}
 
       <Modal
@@ -187,34 +264,38 @@ export default function RestaurantHome() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Mesas reservadas</Text>
+            <Text style={styles.modalTitle}>Mesas</Text>
 
             <Text style={styles.modalMessage}>
-              Ajuste o número de mesas reservadas no momento.
+              Toque em uma mesa para marcar como reservada ou livre.
             </Text>
 
-            <View style={styles.counterRow}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.counterButton,
-                  pressed && styles.counterButtonPressed,
-                ]}
-                onPress={() => alterarMesas(-1)}
-              >
-                <Text style={styles.counterButtonText}>−</Text>
-              </Pressable>
+            <View style={styles.mesasGrid}>
+              {mesas.map((reservada, index) => (
+                <Pressable
+                  key={index}
+                  style={({ pressed }) => [
+                    styles.mesaItem,
+                    reservada ? styles.mesaReservada : styles.mesaLivre,
+                    pressed && styles.mesaItemPressed,
+                  ]}
+                  onPress={() => alternarMesa(index)}
+                >
+                  <Text style={styles.mesaNumero}>{index + 1}</Text>
+                </Pressable>
+              ))}
+            </View>
 
-              <Text style={styles.counterValue}>{mesasReservadas}</Text>
+            <View style={styles.legendaRow}>
+              <View style={styles.legendaItem}>
+                <View style={[styles.legendaDot, styles.mesaLivre]} />
+                <Text style={styles.legendaText}>Livre</Text>
+              </View>
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.counterButton,
-                  pressed && styles.counterButtonPressed,
-                ]}
-                onPress={() => alterarMesas(1)}
-              >
-                <Text style={styles.counterButtonText}>+</Text>
-              </Pressable>
+              <View style={styles.legendaItem}>
+                <View style={[styles.legendaDot, styles.mesaReservada]} />
+                <Text style={styles.legendaText}>Reservada</Text>
+              </View>
             </View>
 
             <Pressable
@@ -222,6 +303,50 @@ export default function RestaurantHome() {
               onPress={() => setMesasModalVisible(false)}
             >
               <Text style={styles.modalButtonText}>CONCLUÍDO</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* =====================================================
+      MODAL: MENU
+      ===================================================== */}
+
+      <Modal
+        visible={menuModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Menu</Text>
+
+            <Text style={styles.modalMessage}>Pratos do cardápio.</Text>
+
+            <FlatList
+              data={PRATOS}
+              keyExtractor={(item) => item.id}
+              style={styles.pratosList}
+              renderItem={({ item }) => (
+                <View style={styles.pratoCard}>
+                  <View style={styles.pratoInfo}>
+                    <Text style={styles.pratoNome}>{item.nome}</Text>
+                    <Text style={styles.pratoDescricao} numberOfLines={2}>
+                      {item.descricao}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.pratoPreco}>{item.preco}</Text>
+                </View>
+              )}
+            />
+
+            <Pressable
+              style={styles.modalButton}
+              onPress={() => setMenuModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>FECHAR</Text>
             </Pressable>
           </View>
         </View>
@@ -255,14 +380,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 30,
-    gap: 16,
+    gap: 14,
   },
 
   bigButton: {
-    minHeight: 150,
+    minHeight: 120,
     borderRadius: 22,
     paddingHorizontal: 20,
-    paddingVertical: 22,
+    paddingVertical: 20,
     backgroundColor: "#111111",
     borderWidth: 1,
     borderColor: "#242424",
@@ -271,28 +396,28 @@ const styles = StyleSheet.create({
   bigButtonPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 
   bigButtonIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#191919",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
 
   iconOpen: { backgroundColor: "#101A14" },
   iconClosed: { backgroundColor: "#1A1111" },
 
-  bigButtonEmoji: { fontSize: 24 },
+  bigButtonEmoji: { fontSize: 21 },
 
   bigButtonTitle: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
     letterSpacing: 1,
   },
 
-  bigButtonSubtitle: { color: "#858585", fontSize: 13, marginTop: 6 },
+  bigButtonSubtitle: { color: "#858585", fontSize: 12, marginTop: 5 },
 
   // ===================================================
   // MODAL
@@ -303,17 +428,17 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.78)",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
   },
 
   modalCard: {
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 380,
+    maxHeight: "80%",
     backgroundColor: "#181818",
     borderRadius: 20,
     paddingHorizontal: 24,
     paddingVertical: 26,
-    alignItems: "center",
     borderWidth: 1,
     borderColor: "#292929",
   },
@@ -360,38 +485,80 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  modalCancel: { marginTop: 4, paddingVertical: 8 },
+  modalCancel: { marginTop: 4, paddingVertical: 8, alignSelf: "center" },
 
   modalCancelText: { color: "#777777", fontSize: 13, fontWeight: "600" },
 
-  counterRow: {
+  // ===================================================
+  // MESAS
+  // ===================================================
+
+  mesasGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+
+  mesaItem: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+
+  mesaItemPressed: { opacity: 0.75, transform: [{ scale: 0.95 }] },
+
+  mesaLivre: { backgroundColor: "#101A14", borderColor: "#2E8B57" },
+  mesaReservada: { backgroundColor: "#1A1111", borderColor: "#B83A3A" },
+
+  mesaNumero: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+
+  legendaRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 20,
+  },
+
+  legendaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+
+  legendaDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 1 },
+
+  legendaText: { color: "#999999", fontSize: 12, fontWeight: "600" },
+
+  // ===================================================
+  // MENU / PRATOS
+  // ===================================================
+
+  pratosList: { marginBottom: 12 },
+
+  pratoCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 24,
-    marginBottom: 22,
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#242424",
+    marginBottom: 10,
   },
 
-  counterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#222222",
-    alignItems: "center",
-    justifyContent: "center",
+  pratoInfo: { flex: 1, marginRight: 10 },
+
+  pratoNome: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+
+  pratoDescricao: {
+    color: "#858585",
+    fontSize: 11,
+    marginTop: 4,
+    lineHeight: 15,
   },
 
-  counterButtonPressed: { opacity: 0.75, transform: [{ scale: 0.95 }] },
-
-  counterButtonText: { color: "#F58427", fontSize: 22, fontWeight: "900" },
-
-  counterValue: {
-    color: "#FFFFFF",
-    fontSize: 26,
-    fontWeight: "900",
-    minWidth: 40,
-    textAlign: "center",
-  },
+  pratoPreco: { color: "#F58427", fontSize: 13, fontWeight: "800" },
 
   modalButton: {
     width: "100%",
