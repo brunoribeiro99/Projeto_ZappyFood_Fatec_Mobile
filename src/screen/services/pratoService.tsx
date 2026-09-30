@@ -1,8 +1,6 @@
 import { child, get, push, ref, remove, update } from "firebase/database";
-
 import { PratoModel } from "../models/PratoModel";
-
-import { database } from "../services/firebaseConfig";
+import { database } from "./firebaseConfig";
 
 // Tipo para mapear os erros de validação de cada campo do formulário
 export type ErrosPrato = Partial<Record<keyof PratoModel, string>>;

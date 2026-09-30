@@ -17,6 +17,18 @@ import {
 import { PratoModel } from "./models/PratoModel";
 import { PratoService } from "./services/pratoService";
 
+// =====================================================
+// CATEGORIAS DISPONÍVEIS
+// =====================================================
+
+const CATEGORIAS = [
+  "Entrada",
+  "Prato principal",
+  "Acompanhamento",
+  "Sobremesa",
+  "Bebida",
+];
+
 export default function CardapioScreen() {
   // =====================================================
   // LISTA DE PRATOS
@@ -31,6 +43,14 @@ export default function CardapioScreen() {
   const [modalVisible, setModalVisible] = useState(false);
 
   // =====================================================
+  // POPUP DE CONFIRMAÇÃO (EXCLUIR / ALTERAR)
+  // =====================================================
+
+  const [confirmacao, setConfirmacao] = useState<"excluir" | "alterar" | null>(
+    null,
+  );
+
+  // =====================================================
   // CAMPOS DO FORMULÁRIO
   // =====================================================
 
@@ -40,6 +60,12 @@ export default function CardapioScreen() {
   const [preco, setPreco] = useState("");
   const [tempoPreparo, setTempoPreparo] = useState("");
   const [disponivel, setDisponivel] = useState<boolean | null>(null);
+
+  // =====================================================
+  // DROPDOWN DE CATEGORIA
+  // =====================================================
+
+  const [categoriaAberta, setCategoriaAberta] = useState(false);
 
   // =====================================================
   // CONTROLE DE EDIÇÃO
@@ -87,6 +113,8 @@ export default function CardapioScreen() {
     setTempoPreparo("");
     setDisponivel(null);
 
+    setCategoriaAberta(false);
+
     setEditandoId(null);
 
     setErro("");
@@ -114,6 +142,8 @@ export default function CardapioScreen() {
     setTempoPreparo(prato.tempoPreparo);
     setDisponivel(prato.disponivel);
 
+    setCategoriaAberta(false);
+
     setEditandoId(prato.id ?? null);
 
     setErro("");
@@ -127,6 +157,8 @@ export default function CardapioScreen() {
 
   const fecharModal = () => {
     setModalVisible(false);
+
+    setConfirmacao(null);
 
     limparFormulario();
   };
@@ -253,6 +285,22 @@ export default function CardapioScreen() {
   };
 
   // =====================================================
+  // CONFIRMAR AÇÃO DO POPUP
+  // =====================================================
+
+  const confirmarAcao = async () => {
+    const acao = confirmacao;
+
+    setConfirmacao(null);
+
+    if (acao === "excluir") {
+      await excluirPrato();
+    } else if (acao === "alterar") {
+      await salvarPrato();
+    }
+  };
+
+  // =====================================================
   // RENDER
   // =====================================================
 
@@ -339,16 +387,45 @@ export default function CardapioScreen() {
             />
 
             {/* =========================
-                            CATEGORIA
+                            CATEGORIA (DROPDOWN)
                         ========================= */}
 
-            <TextInput
-              style={styles.input}
-              placeholder="Categoria"
-              placeholderTextColor="#777"
-              value={categoria}
-              onChangeText={setCategoria}
-            />
+            <Pressable
+              style={styles.dropdown}
+              onPress={() => setCategoriaAberta(!categoriaAberta)}
+            >
+              <Text
+                style={
+                  categoria ? styles.dropdownTexto : styles.dropdownPlaceholder
+                }
+              >
+                {categoria || "Categoria"}
+              </Text>
+
+              <Text style={styles.dropdownSeta}>
+                {categoriaAberta ? "▲" : "▼"}
+              </Text>
+            </Pressable>
+
+            {categoriaAberta && (
+              <View style={styles.dropdownLista}>
+                {CATEGORIAS.map((opcao) => (
+                  <Pressable
+                    key={opcao}
+                    style={[
+                      styles.dropdownItem,
+                      categoria === opcao && styles.dropdownItemSelecionado,
+                    ]}
+                    onPress={() => {
+                      setCategoria(opcao);
+                      setCategoriaAberta(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownTexto}>{opcao}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             {/* =========================
                             DESCRIÇÃO
@@ -441,18 +518,70 @@ export default function CardapioScreen() {
               </Pressable>
 
               {editandoId && (
-                <Pressable style={styles.botaoExcluir} onPress={excluirPrato}>
+                <Pressable
+                  style={styles.botaoExcluir}
+                  onPress={() => setConfirmacao("excluir")}
+                >
                   <Text style={styles.textoBotao}>Excluir</Text>
                 </Pressable>
               )}
 
-              <Pressable style={styles.botaoSalvar} onPress={salvarPrato}>
+              <Pressable
+                style={styles.botaoSalvar}
+                onPress={() =>
+                  editandoId ? setConfirmacao("alterar") : salvarPrato()
+                }
+              >
                 <Text style={styles.textoBotao}>
                   {editandoId ? "Alterar" : "Salvar"}
                 </Text>
               </Pressable>
             </View>
           </View>
+
+          {/* =========================================
+                    POPUP DE CONFIRMAÇÃO
+                ========================================= */}
+
+          {confirmacao !== null && (
+            <View style={styles.confirmacaoFundo}>
+              <View style={styles.confirmacaoCaixa}>
+                <Text style={styles.confirmacaoTitulo}>
+                  {confirmacao === "excluir"
+                    ? "Excluir prato"
+                    : "Alterar prato"}
+                </Text>
+
+                <Text style={styles.confirmacaoMensagem}>
+                  {confirmacao === "excluir"
+                    ? "Deseja realmente excluir esse prato do seu cardápio?"
+                    : "Deseja realmente alterar esse prato do seu cardápio?"}
+                </Text>
+
+                <View style={styles.botoes}>
+                  <Pressable
+                    style={styles.botaoCancelar}
+                    onPress={() => setConfirmacao(null)}
+                  >
+                    <Text style={styles.textoBotao}>Cancelar</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={
+                      confirmacao === "excluir"
+                        ? styles.botaoExcluir
+                        : styles.botaoSalvar
+                    }
+                    onPress={confirmarAcao}
+                  >
+                    <Text style={styles.textoBotao}>
+                      {confirmacao === "excluir" ? "Excluir" : "Alterar"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          )}
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
@@ -568,6 +697,50 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
 
+  dropdown: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 10,
+    padding: 13,
+    marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  dropdownTexto: {
+    color: "#fff",
+  },
+
+  dropdownPlaceholder: {
+    color: "#777",
+  },
+
+  dropdownSeta: {
+    color: "#777",
+    fontSize: 12,
+  },
+
+  dropdownLista: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 10,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+
+  dropdownItem: {
+    padding: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1c1c1c",
+  },
+
+  dropdownItemSelecionado: {
+    backgroundColor: "#2a1a0a",
+  },
+
   disponibilidadeContainer: {
     marginBottom: 12,
   },
@@ -643,5 +816,36 @@ const styles = StyleSheet.create({
   textoBotao: {
     color: "#fff",
     fontWeight: "bold",
+  },
+
+  confirmacaoFundo: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+
+  confirmacaoCaixa: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "#111",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+    padding: 20,
+  },
+
+  confirmacaoTitulo: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  confirmacaoMensagem: {
+    color: "#bbb",
+    fontSize: 15,
+    marginBottom: 20,
   },
 });
