@@ -1,10 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { signOut } from "firebase/auth";
+import React, { useCallback, useState } from "react";
+import {
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import Cardapio from "./cardapio_screen";
+import { auth } from "./services/firebaseConfig";
 
 const Tab = createBottomTabNavigator();
 
@@ -34,7 +44,9 @@ function HomeScreen() {
             <View
               style={[
                 styles.statusIndicator,
-                isAberto ? styles.statusIndicatorOpen : styles.statusIndicatorClosed,
+                isAberto
+                  ? styles.statusIndicatorOpen
+                  : styles.statusIndicatorClosed,
               ]}
             />
             <Text style={styles.statusLabel}>STATUS DO RESTAURANTE</Text>
@@ -48,19 +60,32 @@ function HomeScreen() {
 
           <View style={styles.toggleRow}>
             <Pressable
-              style={[styles.toggleOption, isAberto && styles.toggleOptionActiveOpen]}
+              style={[
+                styles.toggleOption,
+                isAberto && styles.toggleOptionActiveOpen,
+              ]}
               onPress={() => setStatus("aberto")}
             >
-              <Text style={[styles.toggleText, isAberto && styles.toggleTextActive]}>
+              <Text
+                style={[styles.toggleText, isAberto && styles.toggleTextActive]}
+              >
                 🟢 ABERTO
               </Text>
             </Pressable>
 
             <Pressable
-              style={[styles.toggleOption, !isAberto && styles.toggleOptionActiveClosed]}
+              style={[
+                styles.toggleOption,
+                !isAberto && styles.toggleOptionActiveClosed,
+              ]}
               onPress={() => setStatus("fechado")}
             >
-              <Text style={[styles.toggleText, !isAberto && styles.toggleTextActive]}>
+              <Text
+                style={[
+                  styles.toggleText,
+                  !isAberto && styles.toggleTextActive,
+                ]}
+              >
                 🔴 FECHADO
               </Text>
             </Pressable>
@@ -123,27 +148,83 @@ function ListarApiScreen() {
 // =====================================================
 
 function SairScreen({ navigation }: any) {
-  const handleLogout = () => {
-    Alert.alert("Sair", "Deseja realmente sair da sua conta?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: () => navigation.getParent()?.navigate("Login"),
-      },
-    ]);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [saindo, setSaindo] = useState(false);
+
+  // Abre o popup assim que a aba "Sair" é tocada
+  useFocusEffect(
+    useCallback(() => {
+      setConfirmVisible(true);
+
+      return () => setConfirmVisible(false);
+    }, []),
+  );
+
+  // Cancelar fecha o popup e volta para a Home
+  const handleCancel = () => {
+    setConfirmVisible(false);
+
+    navigation.navigate("Home");
+  };
+
+  const handleLogout = async () => {
+    try {
+      setSaindo(true);
+
+      // Encerra a sessão no Firebase
+      await signOut(auth);
+
+      setSaindo(false);
+      setConfirmVisible(false);
+
+      // Vai para o Login e limpa o histórico (o botão voltar não traz o painel de volta)
+      navigation.getParent()?.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+      setSaindo(false);
+    }
   };
 
   return (
     <View style={styles.logoutContainer}>
-      <Text style={styles.logoutTitle}>Atenção</Text>
-      <Text style={styles.logoutSubtitle}>
-        Você está prestes a encerrar sua sessão.
-      </Text>
+      <Modal
+        visible={confirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancel}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>Sair</Text>
+            <Text style={styles.confirmMessage}>
+              Deseja realmente sair da sua conta?
+            </Text>
 
-      <Pressable style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>CONFIRMAR SAÍDA</Text>
-      </Pressable>
+            <View style={styles.confirmButtons}>
+              <Pressable
+                style={styles.confirmCancel}
+                onPress={handleCancel}
+                disabled={saindo}
+              >
+                <Text style={styles.confirmCancelText}>CANCELAR</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.confirmExit}
+                onPress={handleLogout}
+                disabled={saindo}
+              >
+                <Text style={styles.confirmExitText}>
+                  {saindo ? "SAINDO..." : "SAIR"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -177,11 +258,31 @@ export default function RestaurantDashboardScreen() {
           },
         })}
       >
-        <Tab.Screen name="Cardapio" component={Cardapio} options={{ tabBarLabel: "Cardápio" }} />
-        <Tab.Screen name="Pedidos" component={PedidosScreen} options={{ tabBarLabel: "Pedidos" }} />
-        <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: "Home" }} />
-        <Tab.Screen name="ListarApi" component={ListarApiScreen} options={{ tabBarLabel: "API" }} />
-        <Tab.Screen name="Sair" component={SairScreen} options={{ tabBarLabel: "Sair" }} />
+        <Tab.Screen
+          name="Cardapio"
+          component={Cardapio}
+          options={{ tabBarLabel: "Cardápio" }}
+        />
+        <Tab.Screen
+          name="Pedidos"
+          component={PedidosScreen}
+          options={{ tabBarLabel: "Pedidos" }}
+        />
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ tabBarLabel: "Home" }}
+        />
+        <Tab.Screen
+          name="ListarApi"
+          component={ListarApiScreen}
+          options={{ tabBarLabel: "API" }}
+        />
+        <Tab.Screen
+          name="Sair"
+          component={SairScreen}
+          options={{ tabBarLabel: "Sair" }}
+        />
       </Tab.Navigator>
     </View>
   );
@@ -202,7 +303,13 @@ const styles = StyleSheet.create({
   // HOME
   homeContainer: { flex: 1, backgroundColor: "#080808" },
   header: { paddingHorizontal: 24, paddingTop: 28, paddingBottom: 8 },
-  logo: { fontSize: 20, fontWeight: "900", letterSpacing: 2, color: "#FFFFFF", marginBottom: 30 },
+  logo: {
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: 2,
+    color: "#FFFFFF",
+    marginBottom: 30,
+  },
   logoOrange: { color: "#F58427" },
   title: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   homeContent: { flex: 1, paddingHorizontal: 24, paddingTop: 30, gap: 16 },
@@ -214,11 +321,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#242424",
   },
-  statusHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  statusHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
   statusIndicator: { width: 10, height: 10, borderRadius: 5 },
   statusIndicatorOpen: { backgroundColor: "#2E8B57" },
   statusIndicatorClosed: { backgroundColor: "#B83A3A" },
-  statusLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "800", letterSpacing: 1 },
+  statusLabel: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
   statusMessage: { color: "#858585", fontSize: 12, marginBottom: 18 },
   toggleRow: {
     flexDirection: "row",
@@ -229,9 +346,23 @@ const styles = StyleSheet.create({
     padding: 4,
     gap: 4,
   },
-  toggleOption: { flex: 1, height: 42, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  toggleOptionActiveOpen: { backgroundColor: "#101A14", borderWidth: 1, borderColor: "#2E8B57" },
-  toggleOptionActiveClosed: { backgroundColor: "#1A1111", borderWidth: 1, borderColor: "#B83A3A" },
+  toggleOption: {
+    flex: 1,
+    height: 42,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleOptionActiveOpen: {
+    backgroundColor: "#101A14",
+    borderWidth: 1,
+    borderColor: "#2E8B57",
+  },
+  toggleOptionActiveClosed: {
+    backgroundColor: "#1A1111",
+    borderWidth: 1,
+    borderColor: "#B83A3A",
+  },
   toggleText: { color: "#666666", fontSize: 12, fontWeight: "800" },
   toggleTextActive: { color: "#FFFFFF" },
   summaryRow: { flexDirection: "row", gap: 14 },
@@ -245,16 +376,36 @@ const styles = StyleSheet.create({
     borderColor: "#242424",
   },
   summaryNumber: { color: "#F58427", fontSize: 26, fontWeight: "900" },
-  summaryLabel: { color: "#858585", fontSize: 11, fontWeight: "600", marginTop: 4 },
+  summaryLabel: {
+    color: "#858585",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 4,
+  },
 
   // PLACEHOLDER (Pedidos)
-  placeholderContainer: { flex: 1, backgroundColor: "#080808", alignItems: "center", justifyContent: "center" },
+  placeholderContainer: {
+    flex: 1,
+    backgroundColor: "#080808",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   placeholderTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "800" },
   placeholderText: { color: "#858585", fontSize: 13, marginTop: 6 },
 
   // API
-  apiContainer: { flex: 1, backgroundColor: "#080808", padding: 24, paddingTop: 40 },
-  apiTitle: { color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginBottom: 20 },
+  apiContainer: {
+    flex: 1,
+    backgroundColor: "#080808",
+    padding: 24,
+    paddingTop: 40,
+  },
+  apiTitle: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 20,
+  },
   apiCard: {
     backgroundColor: "#111111",
     borderWidth: 1,
@@ -264,12 +415,73 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   apiEndpoint: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
-  apiStatus: { color: "#2E8B57", fontSize: 12, marginTop: 4, fontWeight: "600" },
+  apiStatus: {
+    color: "#2E8B57",
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: "600",
+  },
 
   // SAIR
-  logoutContainer: { flex: 1, backgroundColor: "#080808", justifyContent: "center", alignItems: "center", padding: 28 },
-  logoutTitle: { fontSize: 22, fontWeight: "800", color: "#FFFFFF", marginBottom: 8 },
-  logoutSubtitle: { fontSize: 14, color: "#858585", textAlign: "center", marginBottom: 32 },
-  logoutButton: { height: 52, width: "100%", borderRadius: 11, backgroundColor: "#F58427", justifyContent: "center", alignItems: "center" },
-  logoutButtonText: { color: "#111111", fontSize: 13, fontWeight: "900", letterSpacing: 2 },
+  logoutContainer: {
+    flex: 1,
+    backgroundColor: "#080808",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 28,
+  },
+
+  // SAIR - POPUP DE CONFIRMAÇÃO
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.78)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  confirmCard: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#181818",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#292929",
+    padding: 24,
+  },
+  confirmTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "900",
+    marginBottom: 8,
+  },
+  confirmMessage: { color: "#8C8C8C", fontSize: 14, marginBottom: 24 },
+  confirmButtons: { flexDirection: "row", gap: 10 },
+  confirmCancel: {
+    flex: 1,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: "#333333",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmCancelText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  confirmExit: {
+    flex: 1,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: "#8B1E1E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmExitText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
 });

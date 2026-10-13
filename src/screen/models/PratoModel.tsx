@@ -1,6 +1,8 @@
 export interface PratoModel {
   id?: string;
 
+  restauranteId: string;
+
   nome: string;
 
   categoria: string;

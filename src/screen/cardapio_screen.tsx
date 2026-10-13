@@ -15,6 +15,7 @@ import {
 } from "react-native";
 
 import { PratoModel } from "./models/PratoModel";
+import { auth } from "./services/firebaseConfig";
 import { PratoService } from "./services/pratoService";
 
 // =====================================================
@@ -80,7 +81,7 @@ export default function CardapioScreen() {
   const [erro, setErro] = useState("");
 
   // =====================================================
-  // CARREGAR PRATOS DO FIREBASE
+  // CARREGAR PRATOS DO RESTAURANTE LOGADO
   // =====================================================
 
   useEffect(() => {
@@ -88,8 +89,17 @@ export default function CardapioScreen() {
   }, []);
 
   const carregarPratos = async () => {
+    // O uid do usuário logado identifica o restaurante
+    const restauranteId = auth.currentUser?.uid;
+
+    if (!restauranteId) {
+      setPratos([]);
+      setErro("Restaurante não identificado. Faça login novamente.");
+      return;
+    }
+
     try {
-      const lista = await PratoService.listarTodas();
+      const lista = await PratoService.listarPorRestaurante(restauranteId);
 
       setPratos(lista);
     } catch (error) {
@@ -171,11 +181,25 @@ export default function CardapioScreen() {
     setErro("");
 
     // ---------------------------------------------
+    // IDENTIFICA O RESTAURANTE LOGADO
+    // ---------------------------------------------
+
+    const restauranteId = auth.currentUser?.uid;
+
+    if (!restauranteId) {
+      setErro("Restaurante não identificado. Faça login novamente.");
+
+      return;
+    }
+
+    // ---------------------------------------------
     // MONTA O OBJETO DO PRATO
     // ---------------------------------------------
 
     const dados: PratoModel = {
       id: editandoId ?? undefined,
+
+      restauranteId,
 
       nome: nome.trim(),
 

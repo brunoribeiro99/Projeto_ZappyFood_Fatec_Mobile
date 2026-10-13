@@ -50,6 +50,11 @@ export class PratoService {
   } {
     const erros: ErrosPrato = {};
 
+    if (!dados.restauranteId || !dados.restauranteId.trim()) {
+      erros.restauranteId =
+        "Restaurante não identificado. Faça login novamente.";
+    }
+
     if (!dados.nome || !dados.nome.trim()) {
       erros.nome = "Campo obrigatório.";
     }
@@ -81,10 +86,11 @@ export class PratoService {
   }
 
   // =====================================================
-  // VERIFICAR DUPLICIDADE
+  // VERIFICAR DUPLICIDADE (SÓ DENTRO DO MESMO RESTAURANTE)
   // =====================================================
 
   static async verificarDuplicidade(
+    restauranteId: string,
     nome: string,
     categoria: string,
     idAtual?: string,
@@ -93,29 +99,16 @@ export class PratoService {
     mesmaCategoria: boolean;
   }> {
     try {
-      const dbRef = ref(database);
-
-      const snapshot = await get(child(dbRef, "pratos"));
-
-      if (!snapshot.exists()) {
-        return {
-          mesmoNome: false,
-          mesmaCategoria: false,
-        };
-      }
-
-      const data = snapshot.val();
+      const pratos = await PratoService.listarPorRestaurante(restauranteId);
 
       let mesmoNome = false;
       let mesmaCategoria = false;
 
-      Object.keys(data).forEach((key) => {
+      pratos.forEach((prato) => {
         // Durante a edição, ignora o próprio prato
-        if (idAtual && key === idAtual) {
+        if (idAtual && prato.id === idAtual) {
           return;
         }
-
-        const prato = data[key];
 
         const nomeIgual =
           prato.nome?.trim().toLowerCase() === nome.trim().toLowerCase();
@@ -151,11 +144,12 @@ export class PratoService {
   static async criar(dados: PratoModel): Promise<PratoModel> {
     try {
       const duplicidade = await PratoService.verificarDuplicidade(
+        dados.restauranteId,
         dados.nome,
         dados.categoria,
       );
 
-      // Não permite mesmo nome + mesma categoria
+      // Não permite mesmo nome + mesma categoria no mesmo restaurante
       if (duplicidade.mesmaCategoria) {
         throw new Error("Este prato já está cadastrado nesta categoria.");
       }
@@ -192,10 +186,12 @@ export class PratoService {
   }
 
   // =====================================================
-  // LISTAR TODOS OS PRATOS
+  // LISTAR PRATOS DE UM RESTAURANTE
   // =====================================================
 
-  static async listarTodas(): Promise<PratoModel[]> {
+  static async listarPorRestaurante(
+    restauranteId: string,
+  ): Promise<PratoModel[]> {
     try {
       const dbRef = ref(database);
 
@@ -204,13 +200,15 @@ export class PratoService {
       if (snapshot.exists()) {
         const data = snapshot.val();
 
-        // Transforma o objeto retornado do Firebase
-        // em um array de PratoModel
-        return Object.keys(data).map((key) => ({
-          id: key,
+        // Transforma o objeto retornado do Firebase em um array
+        // e mantém só os pratos do restaurante informado
+        return Object.keys(data)
+          .map((key) => ({
+            id: key,
 
-          ...data[key],
-        }));
+            ...data[key],
+          }))
+          .filter((prato) => prato.restauranteId === restauranteId);
       }
 
       return [];
@@ -254,12 +252,13 @@ export class PratoService {
   static async atualizar(id: string, dados: PratoModel): Promise<boolean> {
     try {
       const duplicidade = await PratoService.verificarDuplicidade(
+        dados.restauranteId,
         dados.nome,
         dados.categoria,
         id,
       );
 
-      // Não permite outro prato com mesmo nome + categoria
+      // Não permite outro prato com mesmo nome + categoria no mesmo restaurante
       if (duplicidade.mesmaCategoria) {
         throw new Error("Já existe outro prato com este nome nesta categoria.");
       }
