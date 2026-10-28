@@ -1,22 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
-  Animated,
-  DimensionValue,
-  Easing,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Animated,
+    DimensionValue,
+    Easing,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
-import { userService } from "./services/userService";
+import { userService } from "../services/userService";
 
 export default function CadastroScreen({ navigation, route }: any) {
   // =====================================================

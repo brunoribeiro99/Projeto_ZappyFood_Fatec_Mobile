@@ -1,21 +1,21 @@
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { get, ref } from "firebase/database";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Easing,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Animated,
+    Easing,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
-import { auth, database as db } from "./services/firebaseConfig";
+import { auth, database as db } from "../services/firebaseConfig";
 
 type AccountType = "client" | "company";
 

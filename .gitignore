@@ -43,3 +43,6 @@ app-example
 /android
 #fire base
 firebaseConfig.tsx
+
+# api json bin
+src/constants/Config.tsx

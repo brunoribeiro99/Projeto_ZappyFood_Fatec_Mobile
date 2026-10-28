@@ -3,18 +3,18 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { signOut } from "firebase/auth";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  Modal,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
+import { auth } from "../services/firebaseConfig";
 import Cardapio from "./cardapio_screen";
-import { auth } from "./services/firebaseConfig";
 
 const Tab = createBottomTabNavigator();
 

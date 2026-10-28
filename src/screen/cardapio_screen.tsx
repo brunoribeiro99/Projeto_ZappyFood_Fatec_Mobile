@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   FlatList,
@@ -14,9 +14,9 @@ import {
   View,
 } from "react-native";
 
-import { PratoModel } from "./models/PratoModel";
-import { auth } from "./services/firebaseConfig";
-import { PratoService } from "./services/pratoService";
+import { PratoModel } from "../models/PratoModel";
+import { auth } from "../services/firebaseConfig";
+import { PratoService } from "../services/pratoService";
 
 // =====================================================
 // CATEGORIAS DISPONÍVEIS
