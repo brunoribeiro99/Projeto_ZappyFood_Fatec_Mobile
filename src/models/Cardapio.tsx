@@ -12,8 +12,6 @@ export interface Cardapio {
 }
 
 export interface JSONBinResponse {
-  record: {
-    record: Cardapio[];
-  };
+  record: Cardapio[];
   metadata: any;
 }
