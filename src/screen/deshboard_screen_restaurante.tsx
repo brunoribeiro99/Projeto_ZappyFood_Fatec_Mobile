@@ -5,16 +5,16 @@ import { StatusBar } from "expo-status-bar";
 import { signOut } from "firebase/auth";
 import { useCallback, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import { auth } from "../services/firebaseConfig";
-import Cardapio from "./cardapio_screen";
+import ListarCardapioScreen from "./listar_cardapio_screen";
 
 const Tab = createBottomTabNavigator();
 
@@ -109,7 +109,7 @@ function HomeScreen() {
 }
 
 // =====================================================
-// PEDIDOS (placeholder até definirmos os atributos)
+// PEDIDOS
 // =====================================================
 
 function PedidosScreen() {
@@ -151,7 +151,6 @@ function SairScreen({ navigation }: any) {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [saindo, setSaindo] = useState(false);
 
-  // Abre o popup assim que a aba "Sair" é tocada
   useFocusEffect(
     useCallback(() => {
       setConfirmVisible(true);
@@ -160,10 +159,8 @@ function SairScreen({ navigation }: any) {
     }, []),
   );
 
-  // Cancelar fecha o popup e volta para a Home
   const handleCancel = () => {
     setConfirmVisible(false);
-
     navigation.navigate("Home");
   };
 
@@ -171,13 +168,11 @@ function SairScreen({ navigation }: any) {
     try {
       setSaindo(true);
 
-      // Encerra a sessão no Firebase
       await signOut(auth);
 
       setSaindo(false);
       setConfirmVisible(false);
 
-      // Vai para o Login e limpa o histórico (o botão voltar não traz o painel de volta)
       navigation.getParent()?.reset({
         index: 0,
         routes: [{ name: "Login" }],
@@ -230,7 +225,7 @@ function SairScreen({ navigation }: any) {
 }
 
 // =====================================================
-// DASHBOARD (tela principal após o login)
+// DASHBOARD
 // =====================================================
 
 export default function RestaurantDashboardScreen() {
@@ -260,24 +255,28 @@ export default function RestaurantDashboardScreen() {
       >
         <Tab.Screen
           name="Cardapio"
-          component={Cardapio}
+          component={ListarCardapioScreen}
           options={{ tabBarLabel: "Cardápio" }}
         />
+
         <Tab.Screen
           name="Pedidos"
           component={PedidosScreen}
           options={{ tabBarLabel: "Pedidos" }}
         />
+
         <Tab.Screen
           name="Home"
           component={HomeScreen}
           options={{ tabBarLabel: "Home" }}
         />
+
         <Tab.Screen
           name="ListarApi"
           component={ListarApiScreen}
           options={{ tabBarLabel: "API" }}
         />
+
         <Tab.Screen
           name="Sair"
           component={SairScreen}
@@ -383,7 +382,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // PLACEHOLDER (Pedidos)
+  // PLACEHOLDER
   placeholderContainer: {
     flex: 1,
     backgroundColor: "#080808",
@@ -430,8 +429,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 28,
   },
-
-  // SAIR - POPUP DE CONFIRMAÇÃO
   confirmOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.78)",
